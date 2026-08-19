@@ -1,0 +1,38 @@
+{
+	"name": "@format.dev/types",
+	"version": "0.1.0",
+	"license": "MIT",
+	"description": "Shared type declarations for the Format SDKs.",
+	"author": "the format.dev developers",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/format-hq/format-js.git",
+		"directory": "packages/types"
+	},
+	"type": "module",
+	"sideEffects": false,
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist",
+		"LICENSE"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"clean": "rimraf dist",
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"typecheck": "tsc -p tsconfig.json --noEmit"
+	},
+	"devDependencies": {
+		"rimraf": "^6.1.2",
+		"tsdown": "0.17.0-beta.6",
+		"typescript": "^5"
+	}
+}

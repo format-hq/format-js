@@ -1,0 +1,38 @@
+{
+	"name": "@format.dev/react-mathml-types",
+	"version": "0.1.0",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/format-hq/format-js.git",
+		"directory": "packages/react-mathml-types"
+	},
+	"description": "React JSX IntrinsicElements types for MathML.",
+	"sideEffects": false,
+	"main": "./index.js",
+	"types": "./index.d.ts",
+	"exports": {
+		".": {
+			"types": "./index.d.ts",
+			"default": "./index.js"
+		}
+	},
+	"files": [
+		"index.d.ts",
+		"index.js",
+		"README.md",
+		"LICENSE"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"devDependencies": {
+		"@types/react": "catalog:",
+		"@types/react-18": "npm:@types/react@^18.2.0",
+		"typescript": "catalog:"
+	},
+	"peerDependencies": {
+		"@types/react": ">=18",
+		"react": ">=18"
+	}
+}

@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+		"target": "es2022",
+		"lib": ["ES2022"],
+		"skipLibCheck": true,
+		"jsx": "react-jsx",
+		"strict": true,
+		"noEmit": true,
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"types": ["node"],
+		"resolveJsonModule": true,
+		"allowImportingTsExtensions": true
+	},
+	"include": ["src"],
+	"exclude": ["dist", "node_modules", "src/templates"]
+}

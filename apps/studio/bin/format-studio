@@ -1,0 +1,5 @@
+#!/usr/bin/env node
+
+process.env.FMT_STUDIO_RUNTIME = '1'
+
+await import('../dist/node/bin.js')

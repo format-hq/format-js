@@ -1,0 +1,19 @@
+{
+	"name": "{{ name }}",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "format dev",
+		"compile": "format compile"
+	},
+	"devDependencies": {
+		"@format.dev/cli": "workspace:*",
+		"@format.dev/vue": "workspace:*",
+		"typescript": "^5.0.0"
+	},
+	"dependencies": {
+		"@format.dev/client": "workspace:*",
+		"valibot": "^1.1.0",
+		"vue": "^3.5.25"
+	}
+}

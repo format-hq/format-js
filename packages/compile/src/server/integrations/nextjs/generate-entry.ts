@@ -1,0 +1,378 @@
+import type { FormatConfig } from '../../../shared/types'
+import type { AssetMode, Target } from '../../../shared/types/public/compile'
+import type { FormatNextPluginOptions, FormatTargetOptions } from '../../../shared/types/public/nextjs'
+import type { DocumentAssetState } from '../../compile/compile'
+
+import { resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { listZipEntries } from '@format.dev/zip'
+import { compileForUnplugin } from '../../compile/compile'
+import { getBundleOutDir } from '../../compile/compile'
+import { getDocuments } from '../../project/documents'
+import { getDocumentsDir } from '../../project/paths'
+import { buildDocumentExportMap } from '@format.dev/cli/scaffold'
+import { resolveBundleName } from '../../compile/bundle-name'
+import { BUNDLE_ENTRY_POINT_FILE_NAME } from '../../compile/constants'
+import { computeCacheHash, readCachedHash, writeCacheHash } from '../../compile/compile-cache'
+import { dynamicAssetEmitEntries } from '../../compile/document-assets'
+import { buildWrapperFactorySource } from '../../compile/wrapper-source'
+import { resolveZipModulePath } from '../../compile/make-config'
+import { writeFormatEnvTypes } from '../../project/format-env-types'
+import { logger, withPrefixedConsole } from '../../utils/log'
+
+const TARGET_SUFFIXES: Record<Target, string> = {
+	node: '/node',
+	browser: '/browser',
+	worker: '/edge'
+}
+
+interface ResolvedTargetOptions {
+	target: Target
+	assets: AssetMode | null
+	inlineRemoteCss: boolean
+	validateSchema: boolean
+	bundle: string[]
+	external: string[]
+}
+
+interface TargetEntry {
+	target: Target
+	suffix: string
+	aliasKeys: string[]
+	entryPath: string
+}
+
+export interface GenerateEntryResult {
+	entries: TargetEntry[]
+	outDir: string
+}
+
+function resolveTargetOptions(shared: FormatNextPluginOptions, target: FormatTargetOptions): ResolvedTargetOptions {
+	return {
+		target: target.target,
+		assets: target.assets ?? shared.assets ?? null,
+		inlineRemoteCss: target.inlineRemoteCss ?? shared.inlineRemoteCss ?? false,
+		validateSchema: target.validateSchema ?? shared.validateSchema ?? true,
+		bundle: target.bundle ?? [],
+		external: target.external ?? []
+	}
+}
+
+function getEntryFileName(target: Target): string {
+	return `_next-entry-${target}.js`
+}
+
+interface EntryDocument {
+	documentName: string
+	exportName: string
+	init: {
+		knownAssets: string[]
+		assetUrls: Record<string, string> | null
+		assetsPath: string | null
+		assetsUrl: string | null
+	}
+}
+
+function buildEntrySource(
+	target: Target,
+	assetMode: AssetMode,
+	rendererRelativePath: string,
+	documents: EntryDocument[]
+): string {
+	const exportList = documents.map(doc => doc.exportName).join(', ')
+
+	const factory = buildWrapperFactorySource({
+		mode: assetMode,
+		target,
+		zipModulePath: resolveZipModulePath(assetMode)
+	})
+
+	const wrapperLines = documents.map(
+		doc =>
+			`const ${doc.exportName} = createRendererWrapper(${JSON.stringify(doc.documentName)}, resolveRenderer(${JSON.stringify(doc.exportName)}), ${JSON.stringify(doc.init)});`
+	)
+
+	return [
+		`import * as rendererModule from ${JSON.stringify(rendererRelativePath)};`,
+		factory,
+		[
+			`function resolveRenderer(name) {`,
+			`	const renderer = rendererModule?.[name] ?? rendererModule?.default?.[name] ?? rendererModule?.default?.default?.[name];`,
+			`	if (!renderer) {`,
+			`		throw new Error('Renderer export "' + name + '" not found');`,
+			`	}`,
+			`	return renderer;`,
+			`}`
+		].join('\n'),
+		wrapperLines.join('\n'),
+		`export { ${exportList} };`,
+		`export default { ${exportList} };`,
+		''
+	].join('\n\n')
+}
+
+function buildTypesSourceForModule(moduleAlias: string, documents: Array<{ exportName: string }>): string {
+	const exportNames = documents.map(doc => doc.exportName)
+
+	const namedExports = exportNames.map(name => `\texport const ${name}: FormatRenderer`).join('\n')
+
+	const defaultShape = exportNames.map(name => `${name}: FormatRenderer`).join('; ')
+
+	return [
+		`declare module '${moduleAlias}' {`,
+		'\tinterface FormatAssetConfig {',
+		'\t\tgetAssetsUrl(): string | undefined',
+		'\t\tsetAssetsUrl(url: string): void',
+		'\t}',
+		'',
+		'\tinterface FormatDocument {',
+		'\t\thtml: string',
+		'\t\tgetAssetsWebStream(): Promise<ReadableStream<Uint8Array> | undefined>',
+		'\t}',
+		'',
+		'\tinterface FormatRenderer extends FormatAssetConfig {',
+		'\t\trender(data?: Record<string, unknown>): Promise<FormatDocument>',
+		'\t\tgetAssetsWebStream(): Promise<ReadableStream<Uint8Array> | undefined>',
+		'\t}',
+		'',
+		namedExports,
+		'',
+		`\tconst renderers: { ${defaultShape}; [key: string]: FormatRenderer }`,
+		'\texport default renderers',
+		'}'
+	].join('\n')
+}
+
+function buildTypesSource(aliases: string[], documents: Array<{ exportName: string }>): string {
+	const modules = aliases.map(alias => buildTypesSourceForModule(alias, documents)).join('\n\n')
+
+	return `// Auto-generated by Format Studio — do not edit\n${modules}\n`
+}
+
+function patchReactDomServerImports(source: string): string {
+	let patched = source
+
+	patched = patched.replace(
+		/import\s*\{([^}]+)\}\s*from\s*["']react-dom\/server["']\s*;?/g,
+		'const {$1} = await import("react-dom/server");'
+	)
+
+	patched = patched.replace(
+		/import\s*\*\s*as\s+(\w+)\s+from\s*["']react-dom\/server["']\s*;?/g,
+		'const $1 = await import("react-dom/server");'
+	)
+
+	patched = patched.replace(
+		/import\s+(\w+)\s+from\s*["']react-dom\/server["']\s*;?/g,
+		'const { default: $1 } = await import("react-dom/server");'
+	)
+
+	return patched
+}
+
+async function patchFile(filePath: string): Promise<void> {
+	const content = await readFile(filePath, 'utf-8')
+	const patched = patchReactDomServerImports(content)
+
+	if (patched !== content) {
+		await writeFile(filePath, patched, 'utf-8')
+		logger.debug(`Patched react-dom/server imports in ${filePath}`)
+	}
+}
+
+async function patchCompiledBundles(outDir: string, documentNames: string[]): Promise<void> {
+	for (const documentName of documentNames) {
+		await patchFile(resolve(outDir, documentName, BUNDLE_ENTRY_POINT_FILE_NAME))
+	}
+
+	// Shared chunks can also contain react-dom/server imports (e.g. the engine chunk)
+	const chunksDir = resolve(outDir, 'chunks')
+	const chunkFiles = await readdir(chunksDir).catch(() => [] as string[])
+
+	for (const file of chunkFiles) {
+		if (file.endsWith('.js')) {
+			await patchFile(resolve(chunksDir, file))
+		}
+	}
+}
+
+async function compileTarget(
+	targetConfig: FormatTargetOptions,
+	options: FormatNextPluginOptions,
+	config: FormatConfig,
+	outDir: string,
+	bundleName: string,
+	documentNames: string[],
+	exportNames: Map<string, string>
+): Promise<TargetEntry> {
+	const resolved = resolveTargetOptions(options, targetConfig)
+	const suffix = TARGET_SUFFIXES[resolved.target]
+	const suffixedAlias = `@format:${bundleName}${suffix}`
+	const targetOutDir = resolve(outDir, resolved.target)
+	const assetMode: AssetMode = resolved.assets ?? 'static'
+
+	logger.info(`Compiling ${resolved.target} bundle. Documents: ${documentNames.join(', ')}`)
+
+	const assetState = new Map<string, DocumentAssetState>()
+	await compileForUnplugin(
+		{
+			documents: documentNames,
+			assets: resolved.assets,
+			validateSchema: resolved.validateSchema,
+			inlineRemoteCss: resolved.inlineRemoteCss,
+			bundle: resolved.bundle,
+			external: resolved.external,
+			target: resolved.target,
+			configPath: options.configPath,
+			outDir: targetOutDir,
+			bundleName,
+			clean: false,
+			userBundler: 'webpack'
+		},
+		{ capturedAssetState: assetState }
+	)
+
+	await patchCompiledBundles(targetOutDir, documentNames)
+
+	// The generated entry lives outside the compiled outDir and is re-bundled
+	// by Next.js, so all asset locations are baked as absolute file:// URLs.
+	// Browser/edge consumers point at hosted assets with setAssetsUrl().
+	const compiledDocuments: EntryDocument[] = []
+
+	for (const name of documentNames) {
+		const init: EntryDocument['init'] = { knownAssets: [], assetUrls: null, assetsPath: null, assetsUrl: null }
+
+		if (assetMode === 'static') {
+			const zipPath = resolve(targetOutDir, name, 'assets.zip')
+			const zipBuffer = await readFile(zipPath).catch(() => null)
+
+			if (zipBuffer) {
+				init.knownAssets = listZipEntries(new Uint8Array(zipBuffer))
+				init.assetsUrl = pathToFileURL(zipPath).href
+			}
+		} else if (assetMode === 'dynamic') {
+			const compiledUrlMap = assetState.get(name)?.urlMap ?? {}
+			const entries = dynamicAssetEmitEntries({
+				outDir: targetOutDir,
+				documentName: name,
+				urlMap: compiledUrlMap
+			})
+
+			const urlMap: Record<string, string> = {}
+			for (const entry of entries) {
+				urlMap[entry.knownPath] = pathToFileURL(entry.sourcePath).href
+			}
+
+			init.assetUrls = urlMap
+			init.knownAssets = Object.keys(urlMap).sort()
+		}
+
+		compiledDocuments.push({ documentName: name, exportName: exportNames.get(name)!, init })
+	}
+
+	const entryFileName = getEntryFileName(resolved.target)
+	const rendererRelativePath = `./${resolved.target}/${BUNDLE_ENTRY_POINT_FILE_NAME}`
+	const entrySource = buildEntrySource(resolved.target, assetMode, rendererRelativePath, compiledDocuments)
+	const entryPath = resolve(outDir, entryFileName)
+	await writeFile(entryPath, entrySource, 'utf-8')
+
+	logger.debug(`Generated Next.js entry module for ${resolved.target} at ${entryPath}`)
+
+	return { target: resolved.target, suffix, aliasKeys: [suffixedAlias], entryPath }
+}
+
+export async function generateEntry(
+	config: FormatConfig,
+	options: FormatNextPluginOptions
+): Promise<GenerateEntryResult> {
+	const bundleName = resolveBundleName(options.bundleName)
+	const outDir = getBundleOutDir(config, options.outDir)
+	const targets = options.targets ?? [{ target: 'node' }]
+
+	const documents = await getDocuments(config)
+	const documentNames = documents.map(doc => doc.name).sort((a, b) => a.localeCompare(b))
+
+	if (documentNames.length === 0) {
+		throw new Error('No documents found to compile.')
+	}
+
+	const exportNames = buildDocumentExportMap(documentNames)
+
+	// Check cache — skip compilation if documents + options haven't changed
+	const documentsDir = getDocumentsDir(config)
+	const currentHash = await computeCacheHash(documentsDir, options)
+	const cachedHash = await readCachedHash(outDir)
+
+	if (cachedHash === currentHash) {
+		logger.info('Cache hit. Skipping compile.')
+
+		const entries: TargetEntry[] = targets.map((targetConfig, index) => {
+			const resolved = resolveTargetOptions(options, targetConfig)
+			const suffix = TARGET_SUFFIXES[resolved.target]
+			const suffixedAlias = `@format:${bundleName}${suffix}`
+			const entryFileName = getEntryFileName(resolved.target)
+			const entryPath = resolve(outDir, entryFileName)
+
+			const aliasKeys = index === 0 ? [`@format:${bundleName}`, suffixedAlias] : [suffixedAlias]
+
+			return { target: resolved.target, suffix, aliasKeys, entryPath }
+		})
+
+		return { entries, outDir }
+	}
+
+	logger.debug(`Cache miss. Compiling ${targets.length} target(s)`)
+
+	if (options.clean !== false) {
+		const { rm } = await import('node:fs/promises')
+		await rm(outDir, { recursive: true, force: true }).catch(() => {})
+	}
+
+	await mkdir(outDir, { recursive: true })
+
+	const suppressRolldownLogs = (_level: string, ...args: unknown[]) => {
+		const msg = args.join(' ')
+
+		if (msg.includes('rolldown-vite') && msg.includes('building')) return false
+		if (msg.includes('built in')) return false
+
+		return true
+	}
+
+	// Compile all targets in parallel, suppressing rolldown's stdout noise
+	const entries = (await withPrefixedConsole(
+		() =>
+			Promise.all(
+				targets.map(targetConfig =>
+					compileTarget(targetConfig, options, config, outDir, bundleName, documentNames, exportNames)
+				)
+			),
+		suppressRolldownLogs
+	)) as TargetEntry[]
+
+	// First target also gets the base alias (format:<bundleName>)
+	const baseAlias = `@format:${bundleName}`
+	entries[0].aliasKeys = [baseAlias, ...entries[0].aliasKeys]
+
+	const allAliases = entries.flatMap(e => e.aliasKeys)
+	const documentsForTypes = documentNames.map(name => ({
+		exportName: exportNames.get(name)!
+	}))
+
+	const typesSource = buildTypesSource(allAliases, documentsForTypes)
+	const typesPath = resolve(outDir, 'types.d.ts')
+	await writeFile(typesPath, typesSource, 'utf-8')
+
+	// Write the project's format-env.d.ts — the same file init seeds and every
+	// bundler plugin regenerates, so document imports are strongly typed.
+	await writeFormatEnvTypes({
+		projectRoot: process.cwd(),
+		aliases: allAliases,
+		documents: documentsForTypes
+	})
+
+	await writeCacheHash(outDir, currentHash)
+
+	return { entries, outDir }
+}

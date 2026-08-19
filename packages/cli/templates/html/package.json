@@ -1,0 +1,15 @@
+{
+	"name": "{{ name }}",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "format dev",
+		"compile": "format compile"
+	},
+	"devDependencies": {
+		"@format.dev/cli": "workspace:*"
+	},
+	"dependencies": {
+		"@format.dev/client": "workspace:*"
+	}
+}

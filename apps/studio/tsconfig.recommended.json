@@ -1,0 +1,3 @@
+{
+	"extends": "@format.dev/cli/tsconfig.recommended"
+}

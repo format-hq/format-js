@@ -1,0 +1,161 @@
+name: Release
+
+# Staging a release to npm.
+#
+# This file's name is part of the release contract. npm's trusted publishing
+# binds a package's publisher to an exact organisation, repository, workflow
+# file and environment, so renaming this file breaks every binding until each
+# one is changed to match. The environment name and the dist-tag below carry the
+# same weight.
+#
+# The run is two jobs, and the split is the point. The first validates the
+# release, builds it and packs it; it holds no credential, and it is where
+# dependency code runs — the install, the package builds, the checks. The second
+# holds the npm identity and does nothing but verify what the first produced and
+# hand those exact files to npm. It installs nothing, builds nothing, packs
+# nothing, and runs no package script, so no dependency executes while a
+# publishing credential exists.
+#
+# Staging makes nothing installable. A maintainer approves each staged package
+# afterwards, with a second factor, in the order the run prints.
+
+# A release tag and nothing else. There is deliberately no manual dispatch, no
+# branch trigger and no reusable call: every one of them would be a route to the
+# staging identity that does not begin with a tag the private side created.
+on:
+  push:
+    tags:
+      - 'v*'
+
+# One release at a time, and never cancelled. A cancelled release would leave
+# some packages staged and no run to finish the rest.
+#
+# This lock ends when the run ends, which is when staging finishes and the
+# release starts waiting for approval. Nothing at the Actions level can hold a
+# lock across that wait, so the rule that no second release starts while one is
+# unresolved is a human one.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+# Granted per job. Workflow-wide `id-token: write` would let every job in the
+# run mint the npm identity, including the one that executes dependency code.
+permissions: {}
+
+env:
+  # The channel a release goes live under. Closed-beta releases use `beta`, and
+  # `latest` first exists at general availability, so neither a bootstrap stub
+  # nor a beta build can become the default install by accident. Passed
+  # explicitly on every npm command; npm's own default is `latest`.
+  DIST_TAG: beta
+
+jobs:
+  validate-and-pack:
+    name: validate the release and pack it
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # No id-token. Everything below this line runs before a credential exists,
+    # which is what makes it safe for it to run an install and a build.
+    permissions:
+      contents: read
+    steps:
+      # Full history, because the release proves the tag sits on the head of the
+      # branch the sync writes, and a shallow clone cannot see that branch.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      # No dependency cache in a release. A cache is content someone else's run
+      # wrote, restored into the run that decides what npm receives. Turning it
+      # off is stated rather than left to the default: the action enables caching
+      # on its own when `packageManager` names npm, so a change to that field
+      # would otherwise be enough to bring a cache back.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.19.0
+          package-manager-cache: false
+
+      - name: The toolchain is the one this release pins
+        run: node build/publish/toolchain.ts
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Parses the tag, checks it against the release contract, confirms it
+      # points at the head of the branch the sync writes, confirms the registry
+      # will accept every name at this version, then builds, packs and checks
+      # the twelve tarballs and writes the release manifest beside them.
+      #
+      # Any failure here ends the run, and the job that holds the credential
+      # never starts.
+      - name: Validate, pack and record the release
+        run: |
+          node build/publish/cli.ts release \
+            --output "$RUNNER_TEMP/release" \
+            --tag "$GITHUB_REF_NAME" \
+            --dist-tag "$DIST_TAG"
+
+      # The tarballs and the manifest, and nothing else. The staging job reads
+      # this and re-derives every digest from it.
+      - name: Upload the release artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-${{ github.ref_name }}
+          path: ${{ runner.temp }}/release
+          retention-days: 7
+          if-no-files-found: error
+
+  stage:
+    name: stage the release to npm
+    needs: validate-and-pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # The environment carries the deployment rule that restricts this identity
+    # to `v*` tags, with no admin bypass. A workflow edited on a branch reaches
+    # this job's code and still cannot satisfy the rule, so no credential is
+    # minted outside a release tag.
+    environment: npm-production
+    permissions:
+      contents: read
+      # The one grant in the whole workflow that mints the npm identity.
+      id-token: write
+    steps:
+      # The verifier and stager are first-party code from the tagged commit.
+      # Running reviewed code of our own is what a release requires; running
+      # installed dependency code is what this job must not do, which is why
+      # there is no install step below.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      # `registry-url` writes the .npmrc that points npm at the registry below.
+      # The version matters: releases of this action before v7 also exported a
+      # placeholder auth token alongside it, and npm reading a token is npm not
+      # reaching for its OIDC identity. v7 dropped that fallback, so the two jobs
+      # stay on the same pinned commit for a second reason.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.19.0
+          package-manager-cache: false
+          registry-url: https://registry.npmjs.org
+
+      - name: The toolchain is the one this release pins
+        run: node build/publish/toolchain.ts
+
+      - name: Download the release artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: release-${{ github.ref_name }}
+          path: ${{ runner.temp }}/release
+
+      # Re-reads the release manifest, checks it names this tag and this commit,
+      # recomputes every tarball's sha-512, refuses a file that is missing,
+      # extra, renamed or altered, and only then hands each tarball to npm under
+      # the stated dist-tag. It writes the approval order to the run summary.
+      - name: Stage the packages
+        run: |
+          node build/publish/stage.ts \
+            --artifacts "$RUNNER_TEMP/release" \
+            --tag "$GITHUB_REF_NAME" \
+            --commit "$GITHUB_SHA" \
+            --dist-tag "$DIST_TAG"

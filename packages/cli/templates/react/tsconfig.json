@@ -1,0 +1,6 @@
+{
+	"extends": "@format.dev/cli/tsconfig.recommended",
+	"compilerOptions": {
+		"jsx": "react-jsx"
+	}
+}

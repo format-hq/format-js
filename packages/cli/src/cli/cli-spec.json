@@ -1,0 +1,225 @@
+{
+	"commands": [
+		{
+			"name": "new",
+			"description": "Create a new Format project or document.",
+			"options": [],
+			"commands": [
+				{
+					"name": "project",
+					"description": "Scaffold a new Format project. This works best for a completely empty codebase. For existing codebases, use `format init`.",
+					"arguments": [
+						{
+							"name": "directory",
+							"description": "Where to create the project. Prompted if omitted.",
+							"required": false
+						}
+					],
+					"options": [
+						{
+							"field": "framework",
+							"flags": "--framework <framework>",
+							"description": "The framework to build your documents with.",
+							"type": "string",
+							"choices": ["react", "vue", "html"]
+						},
+						{
+							"field": "install",
+							"flags": "--no-install",
+							"description": "Don't install dependencies after creating the project.",
+							"type": "boolean",
+							"defaultValue": true
+						},
+						{
+							"field": "yes",
+							"flags": "-y, --yes",
+							"description": "Skip all prompts and use the defaults for every option that isn't provided.",
+							"type": "boolean",
+							"defaultValue": false
+						}
+					]
+				},
+				{
+					"name": "document",
+					"description": "Scaffold a new document directory with an entry file, a stylesheet, and a default data variant.",
+					"arguments": [
+						{
+							"name": "name",
+							"description": "The document directory name (kebab-case recommended). Omit it to be prompted with a random suggestion.",
+							"required": false
+						}
+					],
+					"options": [
+						{
+							"field": "styling",
+							"flags": "--styling <method>",
+							"description": "Styling method for the document. Choices are filtered to your project framework. See [/docs/studio/styling](styling docs) for more information.",
+							"defaultValue": "css",
+							"type": "string",
+							"choices": [
+								"css",
+								"css-modules",
+								"vue-sfc-scoped",
+								"scss",
+								"tailwind",
+								"linaria",
+								"vanilla-extract",
+								"panda-css"
+							]
+						},
+						{
+							"field": "schema",
+							"flags": "--schema <library>",
+							"description": "Scaffold a `data/schema.ts` with this validation library, or \"none\" for no schema. Format validates any Standard Schema compliant library, so you can also wire up others by hand.",
+							"type": "string",
+							"choices": ["none", "zod", "valibot", "joi", "yup"],
+							"defaultValue": "none"
+						},
+						{
+							"field": "data",
+							"flags": "--data <path>",
+							"description": "Path to a JSON file to seed the default data variant. Its shape is used to infer the schema and the entry's data type.",
+							"type": "string"
+						},
+						{
+							"field": "size",
+							"flags": "--size <id>",
+							"description": "Page size for the document. A4 is the default; pass \"custom\" with --width and --height for an exact size.",
+							"type": "string",
+							"defaultValue": "a4",
+							"choices": ["a3", "a4", "a5", "letter", "slide-16-9", "slide-4-3", "custom"]
+						},
+						{
+							"field": "width",
+							"flags": "--width <px>",
+							"description": "Custom page width in CSS pixels. Requires --height; ignored unless --size is \"custom\" or omitted.",
+							"type": "string"
+						},
+						{
+							"field": "height",
+							"flags": "--height <px>",
+							"description": "Custom page height in CSS pixels. Requires --width; ignored unless --size is \"custom\" or omitted.",
+							"type": "string"
+						},
+						{
+							"field": "install",
+							"flags": "--no-install",
+							"description": "Don't install missing styling/schema dependencies after creating the document.",
+							"type": "boolean",
+							"defaultValue": true
+						},
+						{
+							"field": "yes",
+							"flags": "-y, --yes",
+							"description": "Skip all prompts and use the defaults for every option that isn't provided.",
+							"type": "boolean",
+							"defaultValue": false
+						},
+						{
+							"field": "empty",
+							"flags": "--empty",
+							"description": "Scaffold the most minimal document. Can be combined with other flags.",
+							"type": "boolean",
+							"defaultValue": false
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "init",
+			"description": "Set up Format in an existing codebase. This script writes a Format config file, adds npm scripts, gitignore entries, the Format packages, and optionally a first document. Each step will confirm before editing anything.",
+			"options": [
+				{
+					"field": "framework",
+					"flags": "--framework <framework>",
+					"description": "The framework to build your documents with — React, Vue or HTML. Detected from your dependencies when omitted.",
+					"type": "string",
+					"choices": ["react", "vue", "html"]
+				},
+				{
+					"field": "rootDir",
+					"flags": "--root-dir <dir>",
+					"description": "Where to install the Format project into. The path you give will be set in your Format config's `rootDir`.",
+					"type": "string"
+				},
+				{
+					"field": "install",
+					"flags": "--no-install",
+					"description": "Don't automatically add or install any Format packages.",
+					"type": "boolean",
+					"defaultValue": true
+				},
+				{
+					"field": "scripts",
+					"flags": "--no-scripts",
+					"description": "Don't add the npm dev and npm compile scripts to your package.json. Existing dev and compile script names are never overwritten regardless, If there's a name clash, they get a `format:` prefix.",
+					"type": "boolean",
+					"defaultValue": true
+				},
+				{
+					"field": "gitignore",
+					"flags": "--no-gitignore",
+					"description": "Don't append the `_generated` and `.env` entries to .gitignore. Existing lines are never touched.",
+					"type": "boolean",
+					"defaultValue": true
+				},
+				{
+					"field": "document",
+					"flags": "--no-document",
+					"description": "Don't offer to create a first document.",
+					"type": "boolean",
+					"defaultValue": true
+				},
+				{
+					"field": "yes",
+					"flags": "-y, --yes",
+					"description": "Skip all prompts and use the defaults for every option that isn't provided.",
+					"type": "boolean",
+					"defaultValue": false
+				}
+			]
+		},
+		{
+			"name": "add",
+			"description": "Adds and installs Format packages. Packages will be installed at the version defined in your config file.",
+			"arguments": [
+				{
+					"name": "packages...",
+					"description": "One or more Format packages. Shorthands map to the scope: `zip` means `@format.dev/zip`.",
+					"required": true
+				}
+			],
+			"options": []
+		},
+		{
+			"name": "remove",
+			"description": "Remove Format packages from your project. The counterpart to `format add`.",
+			"arguments": [
+				{
+					"name": "packages...",
+					"description": "One or more Format packages. Shorthands map to the scope: `zip` means `@format.dev/zip`.",
+					"required": true
+				}
+			],
+			"options": []
+		},
+		{
+			"name": "update",
+			"description": "Move your project to a different Format version. With no arguments, the version set in your Format config file will be used. The argument \"latest\" updates to the latest available version and pins it.",
+			"arguments": [
+				{
+					"name": "version",
+					"description": "An exact release like `0.1.2`, or `latest` for the newest. Omit it to apply the release already pinned in your config. The version field is the source of truth, and editing it by hand then running `format update` is a supported flow.",
+					"required": false
+				}
+			],
+			"options": []
+		},
+		{
+			"name": "version",
+			"description": "Print the current pinned Format version for your project, check every installed Format package matches it exactly, and mention when a newer version is available. Exits non-zero on any drift, so can be used in CI as a gate.",
+			"options": []
+		}
+	]
+}

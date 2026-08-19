@@ -1,0 +1,10 @@
+node_modules/
+dist/
+
+# studio publishes build output, so its dist is the package rather than
+# something a build produced from source that is also here
+!apps/studio/dist/
+!apps/studio/dist/**
+
+*.tsbuildinfo
+.DS_Store

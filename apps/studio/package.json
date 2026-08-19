@@ -1,0 +1,115 @@
+{
+	"name": "@format.dev/studio",
+	"module": "./dist/node/index.js",
+	"type": "module",
+	"version": "0.1.0",
+	"license": "Elastic-2.0",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/format-hq/format-js.git",
+		"directory": "apps/studio"
+	},
+	"exports": {
+		".": {
+			"types": "./types/index.d.ts",
+			"default": "./dist/node/index.js"
+		},
+		"./tsconfig.recommended": "./tsconfig.recommended.json",
+		"./package.json": "./package.json"
+	},
+	"bin": {
+		"format-studio": "./bin/format-studio"
+	},
+	"files": [
+		"bin/**",
+		"dist/**",
+		"types/**",
+		"tsconfig.recommended.json",
+		"LICENSE",
+		"NOTICE",
+		"THIRD_PARTY_NOTICES"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"dependencies": {
+		"@format.dev/cli": "0.1.0",
+		"@format.dev/client": "0.1.0",
+		"@format.dev/compile": "0.1.0",
+		"@format.dev/fonts": "0.1.0",
+		"@format.dev/utils": "0.1.0",
+		"@format.dev/zip": "0.1.0",
+		"@inquirer/prompts": "^7.10.1",
+		"@radix-ui/react-focus-scope": "^1.1.7",
+		"@radix-ui/react-slider": "^1.4.0",
+		"@radix-ui/react-switch": "^1.3.1",
+		"@radix-ui/react-tabs": "^1.1.13",
+		"@radix-ui/react-toggle-group": "^1.1.13",
+		"adm-zip": "^0.5.16",
+		"commander": "^14.0.2",
+		"eta": "^3.5.0",
+		"fast-glob": "^3.3.3",
+		"get-port": "^7.1.0",
+		"gradient-string": "^3.0.0",
+		"jsonc-parser": "^3.3.1",
+		"open": "^11.0.0",
+		"parse5": "^8.0.0",
+		"prettier": "^3.7.4",
+		"rehype-sanitize": "^6.0.0",
+		"rimraf": "^6.1.2",
+		"unified": "^11.0.5",
+		"unique-names-generator": "^4.7.1",
+		"vite": "npm:rolldown-vite@7.3.1"
+	},
+	"devDependencies": {
+		"@format.dev/react": "0.1.0",
+		"@format.dev/vue": "0.1.0",
+		"@testing-library/react": "^16.3.0",
+		"@testing-library/user-event": "^14.6.1",
+		"@types/adm-zip": "^0.5.7",
+		"@types/express": "^5.0.6",
+		"@types/node": "^24.10.4",
+		"@types/postcss-url": "^10.0.4",
+		"@types/react": "^19.2.7",
+		"@types/react-dom": "^19.2.3",
+		"@types/ws": "^8.18.1",
+		"@vitejs/plugin-react": "^5.1.2",
+		"@vitest/browser": "^4.0.18",
+		"@vitest/browser-playwright": "^4.0.18",
+		"@vitest/ui": "^4.0.18",
+		"concurrently": "^9.2.1",
+		"execa": "^9.6.1",
+		"express": "^5.2.1",
+		"fast-xml-parser": "^5.3.3",
+		"fflate": "^0.8.2",
+		"jsdom": "^26.1.0",
+		"lucide-react": "^1.23.0",
+		"node-fetch": "^3.3.2",
+		"nuqs": "^2.8.6",
+		"playwright": "^1.58.2",
+		"react": "^19.2.3",
+		"react-dom": "^19.2.3",
+		"react-markdown": "^10.1.0",
+		"react-tooltip": "^5.30.0",
+		"rollup-plugin-postcss": "^4.0.2",
+		"tsdown": "^0.18.4",
+		"tsx": "^4.21.0",
+		"typescript": "^5.9.3",
+		"unplugin-raw": "^0.6.4",
+		"usehooks-ts": "^3.1.1",
+		"vitest": "^4.0.18",
+		"vue": "^3.5.25",
+		"zustand": "^5.0.9"
+	},
+	"peerDependencies": {
+		"@pandacss/dev": "^1.0.0"
+	},
+	"peerDependenciesMeta": {
+		"@pandacss/dev": {
+			"optional": true
+		}
+	},
+	"engines": {
+		"node": ">=22.12.0"
+	}
+}

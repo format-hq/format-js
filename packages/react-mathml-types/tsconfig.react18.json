@@ -1,0 +1,18 @@
+{
+	// The package's peer range is React >=18, so the declarations are compiled a
+	// second time against the older major. This is not duplication for its own
+	// sake: @types/react 18 keeps the global JSX namespace and aliases React.JSX
+	// onto it, while 19 removed the global and made React.JSX primary — so each
+	// major makes a different one of the package's augmentations load-bearing.
+	//
+	// The alias in package.json names a literal ^18.2.0 rather than the workspace's
+	// react18 catalog, because pnpm does not resolve `catalog:` inside an `npm:`
+	// alias — it links the unresolved specifier as a path and leaves a broken link.
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"paths": {
+			"react": ["./node_modules/@types/react-18"],
+			"react/*": ["./node_modules/@types/react-18/*"]
+		}
+	}
+}

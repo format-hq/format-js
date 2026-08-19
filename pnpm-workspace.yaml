@@ -1,0 +1,27 @@
+packages:
+  - packages/*
+  - apps/studio
+
+# Studio arrives as a published tarball, so its @format.dev/* dependencies are
+# plain versions, not workspace:*. Without this, pnpm fetches them from the
+# registry instead of linking the copies sitting right here.
+linkWorkspacePackages: true
+
+catalog:
+  '@types/react': ^19.2.7
+  '@types/react-dom': ^19.2.3
+  react: ^19.2.3
+  react-dom: ^19.2.3
+  rimraf: ^6.0.1
+  tsdown: ^0.18.4
+  typescript: ^5.9.3
+  vue: ^3.5.25
+
+allowBuilds:
+  '@swc/core': true
+  esbuild: true
+  # these ship prebuilt binaries, so their build scripts are a fallback
+  # nothing here needs
+  '@parcel/watcher': false
+  sharp: false
+  unrs-resolver: false

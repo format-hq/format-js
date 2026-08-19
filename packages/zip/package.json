@@ -1,0 +1,68 @@
+{
+	"name": "@format.dev/zip",
+	"version": "0.1.0",
+	"license": "MIT",
+	"description": "Asset bundling for Format documents.",
+	"author": "the format.dev developers",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/format-hq/format-js.git",
+		"directory": "packages/zip"
+	},
+	"type": "module",
+	"main": "./dist/index.mjs",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
+	"exports": {
+		".": {
+			"browser": {
+				"types": "./dist/web.d.mts",
+				"default": "./dist/web.mjs"
+			},
+			"worker": {
+				"types": "./dist/web.d.mts",
+				"default": "./dist/web.mjs"
+			},
+			"types": "./dist/index.d.mts",
+			"default": "./dist/index.mjs"
+		},
+		"./web": {
+			"types": "./dist/web.d.mts",
+			"default": "./dist/web.mjs"
+		},
+		"./scan": {
+			"types": "./dist/scan.d.mts",
+			"default": "./dist/scan.mjs"
+		}
+	},
+	"files": [
+		"dist",
+		"LICENSE"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"sideEffects": false,
+	"scripts": {
+		"clean": "rimraf dist",
+		"build": "tsdown && node scripts/check-self-contained.mjs",
+		"dev": "tsdown --watch",
+		"typecheck": "tsc -p tsconfig.json --noEmit"
+	},
+	"dependencies": {
+		"@format.dev/types": "workspace:*",
+		"@format.dev/utils": "workspace:*",
+		"fflate": "^0.8.2",
+		"node-html-parser": "^7.1.0"
+	},
+	"devDependencies": {
+		"@types/node": "^24.2.1",
+		"rimraf": "^6.0.1",
+		"tsdown": "0.17.0-beta.6",
+		"typescript": "^5",
+		"vitest": "^4.0.18"
+	},
+	"engines": {
+		"node": ">=22.13.0"
+	}
+}

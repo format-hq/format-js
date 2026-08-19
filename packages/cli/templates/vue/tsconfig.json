@@ -1,0 +1,7 @@
+{
+	"extends": "@format.dev/cli/tsconfig.recommended",
+	"compilerOptions": {
+		"jsx": "preserve",
+		"jsxImportSource": "vue"
+	}
+}

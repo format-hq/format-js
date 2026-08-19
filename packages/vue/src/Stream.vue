@@ -1,0 +1,9 @@
+<script setup lang="ts">
+import Template from './Template.vue'
+</script>
+
+<template>
+	<Template data-type="stream">
+		<slot></slot>
+	</Template>
+</template>
