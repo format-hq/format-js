@@ -1,0 +1,66 @@
+{
+	"name": "@format.dev/fonts",
+	"version": "0.1.0",
+	"license": "(MIT AND OFL-1.1)",
+	"description": "Format's built-in font families (Sans/Serif/Mono/Emoji/Math/Tofu) as a single source of truth: static weight palettes + optical cuts + variable masters, with an @font-face CSS generator. Consumed identically by the previews and the PDF renderer so they never diverge.",
+	"author": "the format.dev developers",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/format-hq/format-js.git",
+		"directory": "packages/fonts"
+	},
+	"type": "module",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
+	"exports": {
+		".": {
+			"types": {
+				"import": "./dist/index.d.mts",
+				"require": "./dist/index.d.cts"
+			},
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.cjs"
+		},
+		"./mode": {
+			"types": {
+				"import": "./dist/mode.d.mts",
+				"require": "./dist/mode.d.cts"
+			},
+			"import": "./dist/mode.mjs",
+			"require": "./dist/mode.cjs"
+		},
+		"./manifest.json": "./manifest.json",
+		"./static.css": "./fonts/static.css",
+		"./variable.css": "./fonts/variable.css"
+	},
+	"files": [
+		"dist",
+		"fonts",
+		"manifest.json",
+		"LICENSE",
+		"licenses"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"sideEffects": false,
+	"scripts": {
+		"clean": "rimraf dist",
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"build:fonts": "python3 scripts/build-fonts.py && node scripts/emit-css.mjs",
+		"check:fonts": "python3 scripts/build-fonts.py && node scripts/emit-css.mjs && git diff --exit-code -- fonts"
+	},
+	"devDependencies": {
+		"@types/node": "^24.2.1",
+		"rimraf": "^6.0.1",
+		"tsdown": "0.17.0-beta.6",
+		"typescript": "^5",
+		"vitest": "^4.1.8"
+	},
+	"engines": {
+		"node": ">=18"
+	}
+}

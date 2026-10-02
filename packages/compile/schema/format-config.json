@@ -1,0 +1,111 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "Format config",
+	"type": "object",
+	"properties": {
+		"$schema": {
+			"type": "string",
+			"description": "Path or URL to the JSON schema for this file, used by editors for autocomplete and validation. Set it to: https://format.dev/schema/format-config.json.",
+			"examples": [
+				"https://format.dev/schema/format-config.json"
+			]
+		},
+		"version": {
+			"type": "string",
+			"description": "The Format release version this project is pinned to. Every installed Format package is kept in lockstep with this version. Set it to the version you want and run `format update` to apply it everywhere. Must be an exact version, never a range.",
+			"examples": [
+				"0.1.2"
+			]
+		},
+		"framework": {
+			"$ref": "#/definitions/Framework",
+			"description": "Which framework to use for your Format documents."
+		},
+		"rootDir": {
+			"type": "string",
+			"description": "The root directory where all Format code is located, relative to the config file. Change this if you want to root your Format documents and data under a different directory. For example, setting this to \"format\" would result in your documents being located in \"format/documents\".",
+			"examples": [
+				"format"
+			],
+			"default": "./"
+		},
+		"sharedAssetsDir": {
+			"type": "string",
+			"description": "The directory for assets shared across documents, as a relative path. Defaults to `assets` under the root dir, mirroring each document's own `./assets/` folder. In your template code, this resolves as `\"./\"`: place `image.png` in this directory and reference it as `\"./image.png\"`. Somewhat equivalent to a `public` dir in a Vite project.",
+			"examples": [
+				"./shared-assets"
+			],
+			"default": "assets"
+		},
+		"cwd": {
+			"type": "string",
+			"description": "Override the base path resolution for Format. Useful if you want to have your config in a different directory to the root of your project. For example, if you put your `format.config.json` file in a `config` directory, you could set `cwd` to `../` to tell Format to look for your project in the parent directory.",
+			"examples": [
+				"../"
+			],
+			"default": "process.cwd()"
+		},
+		"dotEnvPath": {
+			"type": "string",
+			"description": "Specify a path to a `.env` file. If path is relative, this is resolved relative to `cwd`.",
+			"examples": [
+				"../../.env"
+			],
+			"default": "resolve(cwd, .env)"
+		},
+		"pandaCss": {
+			"type": "object",
+			"properties": {
+				"enabled": {
+					"type": "boolean",
+					"description": "Enable Panda CSS processing."
+				},
+				"postCssConfig": {
+					"$ref": "#/definitions/PandaCssPostCssPluginOptions",
+					"description": "Panda CSS PostCSS plugin options. Useful if your Panda config is located in a non-standard location."
+				}
+			},
+			"additionalProperties": false,
+			"description": "Panda CSS configuration options. The `PandaCssPostCssPluginOptions` type is exposed as `PluginOptions` from the `@pandacss/dev/postcss` package. Useful resource: https://github.com/chakra-ui/panda/blob/main/packages/postcss/src/index.ts",
+			"default": "{\nenabled: false,\npostCssConfig: {\ncwd: rootDir || \"./\",\nconfigPath: resolve(rootDir || \"./\", \"panda.config.ts\")\n}\n}"
+		}
+	},
+	"required": [
+		"version",
+		"framework"
+	],
+	"additionalProperties": false,
+	"definitions": {
+		"Framework": {
+			"type": "string",
+			"enum": [
+				"react",
+				"vue",
+				"html"
+			]
+		},
+		"PandaCssPostCssPluginOptions": {
+			"type": "object",
+			"properties": {
+				"configPath": {
+					"type": "string"
+				},
+				"cwd": {
+					"type": "string"
+				},
+				"logfile": {
+					"type": "string"
+				},
+				"allow": {
+					"type": "array",
+					"items": {
+						"type": "string",
+						"format": "regex"
+					}
+				}
+			},
+			"additionalProperties": false,
+			"description": "Options for the Panda CSS PostCSS plugin."
+		}
+	}
+}

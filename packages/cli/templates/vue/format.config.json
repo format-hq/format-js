@@ -1,0 +1,4 @@
+{
+	"$schema": "https://format.dev/schema/format-config.json",
+	"framework": "vue"
+}

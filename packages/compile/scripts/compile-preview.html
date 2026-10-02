@@ -1,0 +1,993 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Format compile preview</title>
+		<style>
+			:root {
+				--bg: #16171a;
+				--panel: #1c1d21;
+				--panel-2: #26272c;
+				--pill: #2a2b30;
+				--pill-hover: #34353b;
+				--border: #34353b;
+				--fg: #f2f2f4;
+				--fg-muted: #9a9ba2;
+				--accent: #0a84ff;
+				--accent-2: #30d158;
+				--warn: #ff9f0a;
+				--ui-font:
+					-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', system-ui, 'Segoe UI', Roboto, sans-serif;
+				--mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+				--radius: 12px;
+			}
+			@media (prefers-color-scheme: light) {
+				:root {
+					--bg: #ffffff;
+					--panel: #ffffff;
+					--panel-2: #f5f5f7;
+					--pill: #e9e9ec;
+					--pill-hover: #e0e0e4;
+					--border: #e2e2e6;
+					--fg: #1d1d1f;
+					--fg-muted: #6e6e73;
+					--accent: #0071e3;
+					--accent-2: #1d9d52;
+					--warn: #b9770a;
+				}
+			}
+			* {
+				box-sizing: border-box;
+			}
+			body {
+				margin: 0;
+				background: var(--bg);
+				color: var(--fg);
+				font-family: var(--ui-font);
+				font-size: 14px;
+				line-height: 1.5;
+				-webkit-font-smoothing: antialiased;
+				height: 100vh;
+				display: grid;
+				grid-template-rows: auto 1fr;
+			}
+			header {
+				padding: 12px 20px;
+				border-bottom: 1px solid var(--border);
+				display: flex;
+				align-items: baseline;
+				gap: 14px;
+			}
+			header h1 {
+				margin: 0;
+				font-size: 15px;
+			}
+			#status {
+				font-size: 12.5px;
+				color: var(--fg-muted);
+			}
+			#status.busy {
+				color: var(--warn);
+			}
+			#status.ok {
+				color: var(--accent-2);
+			}
+			.layout {
+				display: grid;
+				grid-template-columns: 280px 1fr;
+				min-height: 0;
+			}
+			.controls {
+				padding: 14px 16px;
+				border-right: 1px solid var(--border);
+				overflow-y: auto;
+			}
+			.field {
+				margin-bottom: 14px;
+			}
+			.field label {
+				display: block;
+				font-size: 13px;
+				font-weight: 590;
+				color: var(--fg);
+				margin-bottom: 6px;
+			}
+			select,
+			input[type='text'] {
+				width: 100%;
+				padding: 8px 11px;
+				background: var(--panel-2);
+				color: var(--fg);
+				border: 1px solid var(--border);
+				border-radius: 9px;
+				font-size: 13px;
+				font-family: var(--ui-font);
+			}
+			select:focus,
+			input[type='text']:focus {
+				outline: none;
+				border-color: var(--accent);
+			}
+			input[type='text']::placeholder {
+				color: var(--fg-muted);
+			}
+			/* Pill picker — radio (single) and checkbox (multi) share the look. */
+			.pills {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 7px;
+			}
+			.pill {
+				appearance: none;
+				border: none;
+				background: var(--pill);
+				color: var(--fg);
+				font-family: var(--ui-font);
+				font-size: 13px;
+				padding: 7px 14px;
+				border-radius: 999px;
+				cursor: pointer;
+				transition:
+					background 0.12s ease,
+					color 0.12s ease;
+			}
+			.pill:hover {
+				background: var(--pill-hover);
+			}
+			.pill.on {
+				background: var(--fg);
+				color: var(--bg);
+			}
+			.pill.on::before {
+				content: '✓ ';
+			}
+			.pill.hidden {
+				display: none;
+			}
+			button.run {
+				width: 100%;
+				margin-top: 6px;
+				padding: 10px;
+				background: var(--accent);
+				color: #fff;
+				border: none;
+				border-radius: 10px;
+				font-size: 14px;
+				font-weight: 600;
+				cursor: pointer;
+			}
+			button.run:disabled {
+				opacity: 0.5;
+				cursor: not-allowed;
+			}
+			.results {
+				min-width: 0;
+				min-height: 0;
+				display: grid;
+				grid-template-rows: auto 1fr;
+			}
+			.tabs {
+				display: flex;
+				gap: 2px;
+				padding: 8px 12px 0;
+				border-bottom: 1px solid var(--border);
+			}
+			.tabs button {
+				padding: 7px 12px;
+				background: none;
+				border: none;
+				border-bottom: 2px solid transparent;
+				color: var(--fg-muted);
+				cursor: pointer;
+				font-size: 13px;
+			}
+			.tabs button.active {
+				color: var(--fg);
+				border-bottom-color: var(--accent);
+			}
+			.tab-body {
+				overflow: hidden;
+				min-height: 0;
+			}
+			.tab-body > section {
+				height: 100%;
+				display: none;
+			}
+			.tab-body > section.active {
+				display: grid;
+			}
+			#tab-files,
+			#tab-inputs {
+				grid-template-columns: 320px 1fr;
+			}
+			.treecol {
+				display: flex;
+				flex-direction: column;
+				min-width: 0;
+				min-height: 0;
+				border-right: 1px solid var(--border);
+			}
+			.treebar {
+				display: flex;
+				gap: 6px;
+				padding: 6px 10px;
+				border-bottom: 1px solid var(--border);
+				flex-shrink: 0;
+			}
+			.treebar .reveal {
+				font-size: 11px;
+				padding: 3px 9px;
+				background: var(--panel-2);
+				border: 1px solid var(--border);
+				border-radius: 6px;
+				color: var(--fg);
+				cursor: pointer;
+			}
+			.treebar .reveal:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.tree {
+				flex: 1;
+				overflow: auto;
+				padding: 8px 0;
+				font-family: var(--mono);
+				font-size: 12.5px;
+			}
+			.tree .group {
+				padding: 10px 12px 4px;
+				font-size: 11px;
+				font-weight: 590;
+				color: var(--fg-muted);
+			}
+			.tree .row {
+				display: flex;
+				align-items: baseline;
+				gap: 12px;
+				padding: 2px 12px;
+				cursor: default;
+			}
+			.tree .row .name {
+				white-space: pre;
+				flex: 1;
+				min-width: 0;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+			.tree .row .size {
+				flex-shrink: 0;
+				color: var(--fg-muted);
+				font-size: 11px;
+			}
+			.tree .row.file {
+				cursor: pointer;
+				color: var(--accent);
+			}
+			.tree .row.file:hover {
+				background: var(--panel-2);
+			}
+			.tree .row.dir {
+				color: var(--fg-muted);
+			}
+			.tree .row.sel {
+				background: var(--panel-2);
+			}
+			.viewer,
+			#tab-html .body {
+				overflow: auto;
+				padding: 12px 16px;
+				min-height: 0;
+			}
+			#tab-console {
+				grid-template-rows: 1fr;
+			}
+			#consoleBody {
+				min-height: 0;
+				overflow: hidden;
+				padding: 0;
+			}
+			.console-out {
+				margin: 0;
+				height: 100%;
+				overflow: auto;
+				box-sizing: border-box;
+				padding: 14px 16px;
+				background: #0b0d12;
+				color: #d4d8e0;
+				font-family: var(--mono);
+				font-size: 16px;
+				line-height: 1.6;
+				white-space: pre-wrap;
+				word-break: break-word;
+			}
+			pre {
+				margin: 0;
+				font-family: var(--mono);
+				font-size: 12.5px;
+				line-height: 1.5;
+				white-space: pre;
+				tab-size: 2;
+				-moz-tab-size: 2;
+				color: var(--fg);
+			}
+			.cmd {
+				white-space: pre-wrap;
+				word-break: break-word;
+				background: var(--panel-2);
+				border: 1px solid var(--border);
+				border-radius: 7px;
+				padding: 8px 10px;
+				color: var(--accent);
+				font-size: 12px;
+			}
+			/* Shiki dual-theme: light by default, github-dark via the var under dark mode. */
+			.shiki {
+				padding: 12px 16px;
+				border-radius: 6px;
+				tab-size: 2;
+				overflow: auto;
+				font-size: 12.5px;
+				line-height: 1.5;
+			}
+			@media (prefers-color-scheme: dark) {
+				.shiki,
+				.shiki span {
+					color: var(--shiki-dark) !important;
+				}
+				.shiki {
+					background-color: var(--shiki-dark-bg) !important;
+				}
+			}
+			.muted {
+				color: var(--fg-muted);
+			}
+			#tab-html {
+				grid-template-rows: auto 1fr;
+			}
+			.subtabs {
+				padding: 8px 16px 0;
+			}
+			.subtabs button {
+				padding: 5px 10px;
+				background: var(--panel-2);
+				border: 1px solid var(--border);
+				border-radius: 6px;
+				color: var(--fg);
+				cursor: pointer;
+				font-size: 12px;
+				margin-right: 4px;
+			}
+			.subtabs button.active {
+				background: var(--accent);
+				border-color: var(--accent);
+				color: #fff;
+			}
+			iframe {
+				width: 100%;
+				height: 100%;
+				border: 0;
+				background: #fff;
+			}
+			.error {
+				color: var(--warn);
+				white-space: pre-wrap;
+			}
+		</style>
+	</head>
+	<body>
+		<header>
+			<h1>Format compile preview</h1>
+			<span id="status">Pick options and compile.</span>
+		</header>
+		<div class="layout">
+			<aside class="controls">
+				<div class="field">
+					<label>Source</label>
+					<div class="pills" id="source" data-mode="radio">
+						<button class="pill on" data-value="cli">CLI</button>
+						<button class="pill" data-value="unplugin">unplugin</button>
+						<button class="pill" data-value="nextjs">Next.js</button>
+					</div>
+				</div>
+				<div class="field">
+					<label>Output (CLI)</label>
+					<div class="pills" id="output" data-mode="radio">
+						<button class="pill on" data-value="renderer">renderer</button>
+						<button class="pill" data-value="html">html</button>
+					</div>
+				</div>
+				<div class="field">
+					<label>variants (comma-separated)</label>
+					<input type="text" id="variants" placeholder="default, high-value" />
+				</div>
+				<div class="field">
+					<label>Bundler (unplugin — real build)</label>
+					<select id="bundler">
+						<option value="vite">Vite</option>
+						<option value="rollup">Rollup</option>
+						<option value="webpack">webpack</option>
+						<option value="esbuild">esbuild</option>
+					</select>
+				</div>
+				<div class="field">
+					<label>Fixture config</label>
+					<select id="config"></select>
+				</div>
+				<div class="field">
+					<label>Document</label>
+					<select id="document"></select>
+				</div>
+				<div class="field">
+					<label>Target</label>
+					<div class="pills" id="target" data-mode="radio"></div>
+				</div>
+				<div class="field">
+					<label>Asset mode</label>
+					<div class="pills" id="assets" data-mode="radio">
+						<button class="pill on" data-value="static">static</button>
+						<button class="pill" data-value="dynamic">dynamic</button>
+						<button class="pill" data-value="none">none</button>
+					</div>
+				</div>
+				<div class="field">
+					<label>Flags</label>
+					<div class="pills" id="flags" data-mode="checkbox">
+						<button class="pill" data-value="remoteAssets">remoteAssets</button>
+						<button class="pill" data-value="inlineRemoteCss">inlineRemoteCss</button>
+						<button class="pill" data-value="cjs">cjs</button>
+					</div>
+				</div>
+				<div class="field">
+					<label>bundle (comma-separated)</label>
+					<input type="text" id="bundle" placeholder="date-fns" />
+				</div>
+				<div class="field">
+					<label>external (comma-separated)</label>
+					<input type="text" id="external" placeholder="react, react-dom" />
+				</div>
+				<div class="field">
+					<label>bundleName</label>
+					<input type="text" id="bundleName" placeholder="documents" />
+				</div>
+				<div class="field">
+					<label>version</label>
+					<input type="text" id="version" placeholder="package version" />
+				</div>
+				<div class="field">
+					<label>assetsOutDir (unplugin)</label>
+					<input type="text" id="assetsOutDir" placeholder="bundler outDir root" />
+				</div>
+				<button class="run" id="run">Compile</button>
+				<div class="field" style="margin-top: 14px">
+					<label>Equivalent command</label>
+					<pre id="cmd" class="cmd"></pre>
+				</div>
+			</aside>
+
+			<main class="results">
+				<div class="tabs">
+					<button data-tab="inputs" class="active">Files in</button>
+					<button data-tab="files">Files out</button>
+					<button data-tab="html">Rendered HTML</button>
+					<button data-tab="console">Console</button>
+				</div>
+				<div class="tab-body">
+					<section id="tab-inputs" class="active">
+						<div class="treecol">
+							<div class="treebar">
+								<button class="reveal" data-reveal="in" data-app="finder">Finder</button>
+								<button class="reveal" data-reveal="in" data-app="vscode">VS Code</button>
+								<button class="reveal" data-reveal="in" data-app="cursor">Cursor</button>
+							</div>
+							<div class="tree" id="inputTree"></div>
+						</div>
+						<div class="viewer" id="inputViewer"><p class="muted">Click a source file in the tree.</p></div>
+					</section>
+					<section id="tab-files">
+						<div class="treecol">
+							<div class="treebar">
+								<button class="reveal" data-reveal="out" data-app="finder">Finder</button>
+								<button class="reveal" data-reveal="out" data-app="vscode">VS Code</button>
+								<button class="reveal" data-reveal="out" data-app="cursor">Cursor</button>
+							</div>
+							<div class="tree" id="tree"></div>
+						</div>
+						<div class="viewer" id="viewer">
+							<p class="muted">Compile, then click a file (or an assets.zip) in the tree.</p>
+						</div>
+					</section>
+					<section id="tab-html">
+						<div class="body" id="htmlBody"><p class="muted">Compile to see rendered HTML.</p></div>
+					</section>
+					<section id="tab-console">
+						<div class="body" id="consoleBody"><p class="muted">Compile to see console output.</p></div>
+					</section>
+				</div>
+			</main>
+		</div>
+
+		<script>
+			const $ = id => document.getElementById(id)
+			let currentId = null // last compile session id (for output file fetches)
+
+			// --- pill pickers (radio = one selected, checkbox = many) ---
+			const pillValue = id => $(id).querySelector('.pill.on')?.dataset.value ?? null
+			const pillValues = id => [...$(id).querySelectorAll('.pill.on')].map(p => p.dataset.value)
+			const pillHas = (id, value) => pillValues(id).includes(value)
+			function setPillVisible(id, value, visible) {
+				const pill = $(id).querySelector(`[data-value="${value}"]`)
+				if (!pill) return
+				pill.classList.toggle('hidden', !visible)
+				if (!visible) pill.classList.remove('on')
+			}
+
+			// --- syntax highlighting (Shiki, loaded from CDN; falls back to plain text) ---
+			let shikiPromise
+			async function getCodeToHtml() {
+				shikiPromise ??= import('https://esm.sh/shiki@3.4.0').then(m => m.codeToHtml)
+				return shikiPromise
+			}
+			const LANGS = {
+				js: 'javascript',
+				mjs: 'javascript',
+				cjs: 'javascript',
+				map: 'json',
+				ts: 'typescript',
+				tsx: 'tsx',
+				jsx: 'jsx',
+				css: 'css',
+				html: 'html',
+				json: 'json',
+				svg: 'xml',
+				md: 'markdown'
+			}
+			function langOf(path) {
+				return LANGS[path.split('.').pop().toLowerCase()] || 'text'
+			}
+			async function highlight(code, lang) {
+				try {
+					const codeToHtml = await getCodeToHtml()
+					return await codeToHtml(code, {
+						lang,
+						themes: { light: 'github-light', dark: 'github-dark' },
+						defaultColor: 'light'
+					})
+				} catch {
+					return null
+				}
+			}
+
+			// --- file viewer ---
+			async function showFile(info, viewerId, path) {
+				const viewer = $(viewerId)
+				viewer.innerHTML = ''
+				const heading = document.createElement('p')
+				heading.className = 'muted'
+				heading.textContent = path
+				viewer.appendChild(heading)
+
+				if (info.error) {
+					const note = document.createElement('p')
+					note.className = 'muted'
+					note.textContent = info.error
+					viewer.appendChild(note)
+					return
+				}
+				if (info.kind === 'zip') {
+					const label = document.createElement('p')
+					label.className = 'muted'
+					label.textContent = `${info.entries.length} entries`
+					viewer.appendChild(label)
+					const pre = document.createElement('pre')
+					pre.textContent = info.entries.join('\n')
+					viewer.appendChild(pre)
+					return
+				}
+				if (info.kind === 'binary') {
+					const note = document.createElement('p')
+					note.className = 'muted'
+					note.textContent = `Binary file — ${info.size} bytes`
+					viewer.appendChild(note)
+					return
+				}
+				const html = await highlight(info.content, langOf(path))
+				if (html) {
+					const holder = document.createElement('div')
+					holder.innerHTML = html
+					viewer.appendChild(holder)
+					return
+				}
+				const pre = document.createElement('pre')
+				pre.textContent = info.content
+				viewer.appendChild(pre)
+			}
+
+			// --- file tree (generic; `opener(path)` decides what a click loads) ---
+			function formatSize(bytes) {
+				if (bytes < 1024) return bytes + ' B'
+				if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+				return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+			}
+
+			function renderTree(entries, treeId, opener) {
+				const tree = $(treeId)
+				tree.innerHTML = ''
+				if (!entries || !entries.length) {
+					tree.innerHTML = '<p class="muted" style="padding:8px 12px">(no files)</p>'
+					return
+				}
+				appendTreeRows(tree, entries, opener)
+			}
+
+			async function openSrcFile(config, document_, which, path) {
+				const info = await fetch(
+					`/api/srcfile?config=${encodeURIComponent(config)}&document=${encodeURIComponent(document_)}&which=${which}&path=${encodeURIComponent(path)}`
+				).then(r => r.json())
+				showFile(info, 'inputViewer', path)
+			}
+
+			async function openOutFile(id, path) {
+				const info = await fetch(`/api/file?id=${encodeURIComponent(id)}&path=${encodeURIComponent(path)}`).then(r =>
+					r.json()
+				)
+				showFile(info, 'viewer', path)
+			}
+
+			function appendTreeRows(tree, entries, opener) {
+				entries.forEach(entry => {
+					const path = entry.path
+					const isDir = path.endsWith('/')
+					const depth = path.replace(/\/$/, '').split('/').length - 1
+					const name = path.replace(/\/$/, '').split('/').pop() + (isDir ? '/' : '')
+					const row = document.createElement('div')
+					row.className = 'row ' + (isDir ? 'dir' : 'file')
+
+					const nameEl = document.createElement('span')
+					nameEl.className = 'name'
+					nameEl.textContent = '  '.repeat(depth) + name
+					row.appendChild(nameEl)
+
+					if (entry.size != null) {
+						const sizeEl = document.createElement('span')
+						sizeEl.className = 'size'
+						sizeEl.textContent = formatSize(entry.size)
+						row.appendChild(sizeEl)
+					}
+
+					if (!isDir) {
+						row.addEventListener('click', () => {
+							tree.querySelectorAll('.row.sel').forEach(r => r.classList.remove('sel'))
+							row.classList.add('sel')
+							opener(path)
+						})
+					}
+					tree.appendChild(row)
+				})
+			}
+
+			// "Files in" — the document source plus the shared assets dir, shown upfront.
+			async function loadInputs() {
+				const config = $('config').value
+				const docName = $('document').value
+				if (!docName) return
+				const { document: docPaths, shared } = await fetch(
+					`/api/inputs?config=${encodeURIComponent(config)}&document=${encodeURIComponent(docName)}`
+				).then(r => r.json())
+
+				const tree = $('inputTree')
+				tree.innerHTML = ''
+				const docGroup = document.createElement('div')
+				docGroup.className = 'group'
+				docGroup.textContent = `document — ${docName}`
+				tree.appendChild(docGroup)
+				appendTreeRows(tree, docPaths, path => openSrcFile(config, docName, 'doc', path))
+
+				const sharedGroup = document.createElement('div')
+				sharedGroup.className = 'group'
+				sharedGroup.textContent = 'sharedAssetsDir'
+				tree.appendChild(sharedGroup)
+				appendTreeRows(tree, shared, path => openSrcFile(config, docName, 'shared', path))
+
+				$('inputViewer').innerHTML = '<p class="muted">Click a source file in the tree.</p>'
+			}
+
+			function setStatus(text, cls) {
+				const el = $('status')
+				el.textContent = text
+				el.className = cls || ''
+			}
+
+			async function renderHtml(report) {
+				const doc = report.documents[0]
+				const body = $('htmlBody')
+				body.innerHTML = ''
+				const html = doc && doc.html
+				if (!html) {
+					body.innerHTML = '<p class="muted">No rendered HTML for this document.</p>'
+					return
+				}
+				const highlighted = await highlight(html, 'html')
+				if (highlighted) {
+					body.innerHTML = highlighted
+					return
+				}
+				const pre = document.createElement('pre')
+				pre.style.whiteSpace = 'pre-wrap'
+				pre.textContent = html
+				body.appendChild(pre)
+			}
+
+			function renderConsole(log) {
+				const body = $('consoleBody')
+				body.innerHTML = ''
+				const pre = document.createElement('pre')
+				pre.className = 'console-out'
+				pre.textContent = log && log.trim() ? log : '(no console output)'
+				body.appendChild(pre)
+			}
+
+			// --- live "equivalent command" line ---
+			function listVal(id) {
+				return $(id)
+					.value.split(',')
+					.map(s => s.trim())
+					.filter(Boolean)
+			}
+			function commandPreview() {
+				const source = pillValue('source')
+				const doc = $('document').value
+				const assets = pillValue('assets')
+				const target = pillValue('target')
+
+				if (source === 'cli') {
+					const parts = ['format compile', `--documents ${doc}`]
+
+					// HTML output forces a node build with bundled assets, so the
+					// JS-bundle options drop out — mirror the CLI's warn-and-ignore.
+					if (pillValue('output') === 'html') {
+						parts.push('--output html')
+						if (listVal('variants').length) parts.push(`--variants ${listVal('variants').join(',')}`)
+						if (pillHas('flags', 'remoteAssets')) parts.push('--remote-assets')
+						if (pillHas('flags', 'inlineRemoteCss')) parts.push('--inline-remote-css')
+						$('cmd').textContent = parts.join(' ')
+						return
+					}
+					if (assets !== 'static') parts.push(`--assets ${assets}`)
+					if (target !== 'node') parts.push(`--target ${target}`)
+					if (pillHas('flags', 'cjs')) parts.push('--cjs')
+					if (pillHas('flags', 'remoteAssets')) parts.push('--remote-assets')
+					if (pillHas('flags', 'inlineRemoteCss')) parts.push('--inline-remote-css')
+					if (listVal('bundle').length) parts.push(`--bundle ${listVal('bundle').join(',')}`)
+					if (listVal('external').length) parts.push(`--external ${listVal('external').join(',')}`)
+					if ($('bundleName').value.trim()) parts.push(`--bundle-name ${$('bundleName').value.trim()}`)
+					if ($('version').value.trim()) parts.push(`--version ${$('version').value.trim()}`)
+					$('cmd').textContent = parts.join(' ')
+					return
+				}
+				if (source === 'unplugin') {
+					const env = [`TEST_FRAMEWORK=${$('config').value.split('.')[0]}`]
+					if (assets !== 'static') env.push(`TEST_ASSETS_MODE=${assets}`)
+					if ($('assetsOutDir').value.trim()) env.push(`TEST_ASSETS_OUT_DIR=${$('assetsOutDir').value.trim()}`)
+					if (pillHas('flags', 'inlineRemoteCss')) env.push('TEST_INLINE_REMOTE_CSS=1')
+					if ($('bundleName').value.trim()) env.push(`TEST_BUNDLE_NAME=${$('bundleName').value.trim()}`)
+					$('cmd').textContent = `${env.join(' ')} pnpm build:${pillValue('bundler') ?? $('bundler').value}:${target}`
+					return
+				}
+				$('cmd').textContent = '// Next.js: withFormat() in next.config — compiles all documents (no direct CLI)'
+			}
+
+			async function compile() {
+				const run = $('run')
+				run.disabled = true
+				setStatus('Compiling…', 'busy')
+				const payload = {
+					source: pillValue('source'),
+					output: pillValue('output'),
+					variants: $('variants').value,
+					bundler: $('bundler').value,
+					config: $('config').value,
+					document: $('document').value,
+					target: pillValue('target'),
+					assets: pillValue('assets'),
+					remoteAssets: pillHas('flags', 'remoteAssets'),
+					inlineRemoteCss: pillHas('flags', 'inlineRemoteCss'),
+					cjs: pillHas('flags', 'cjs'),
+					bundle: $('bundle').value,
+					external: $('external').value,
+					bundleName: $('bundleName').value,
+					version: $('version').value,
+					assetsOutDir: $('assetsOutDir').value
+				}
+				try {
+					const res = await fetch('/api/compile', {
+						method: 'POST',
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify(payload)
+					})
+					const data = await res.json()
+					if (!res.ok) {
+						setStatus('Compile failed', '')
+						// Surface the full captured console plus the error in the Console pane.
+						const parts = [data.log, data.error || 'Unknown error'].filter(Boolean)
+						renderConsole(parts.join('\n\n'))
+						activateTab('console')
+						return
+					}
+					currentId = data.id
+					const label = data.source === 'unplugin' ? `${data.source}:${data.bundler}` : data.source
+					setStatus(
+						`Compiled ${data.config}/${data.document} (${label}, ${data.assets}, ${data.target}) in ${data.timingMs}ms`,
+						'ok'
+					)
+					renderTree(data.outputTree, 'tree', path => openOutFile(data.id, path))
+					renderHtml(data.report)
+					renderConsole(data.log)
+					$('viewer').innerHTML = '<p class="muted">Click a file (or an assets.zip) in the tree.</p>'
+				} catch (err) {
+					setStatus('Request failed', '')
+					$('viewer').innerHTML = `<pre class="error">${String(err)}</pre>`
+				} finally {
+					run.disabled = false
+				}
+			}
+
+			// Show/hide a control's whole field wrapper (a checkbox hides only its label).
+			function showField(id, visible) {
+				const el = $(id)
+				const wrapper = el.type === 'checkbox' ? el.closest('label') : el.closest('.field')
+				if (wrapper) wrapper.style.display = visible ? '' : 'none'
+			}
+
+			async function loadFixtures() {
+				const fixtures = await fetch('/api/fixtures').then(r => r.json())
+				const configSel = $('config')
+				const byConfig = Object.fromEntries(fixtures.map(f => [f.config, f.documents]))
+
+				function fillDocuments() {
+					const docs = byConfig[configSel.value] || []
+					$('document').innerHTML = docs.map(d => `<option value="${d}">${d}</option>`).join('')
+				}
+
+				function setTargetPills(values) {
+					const cur = pillValue('target')
+					const keep = values.includes(cur) ? cur : values[0]
+					$('target').innerHTML = values
+						.map(v => `<button class="pill${v === keep ? ' on' : ''}" data-value="${v}">${v}</button>`)
+						.join('')
+				}
+
+				// Configs available per source. unplugin/Next.js only support react/vue
+				// (and Next.js just react); CLI gets the full list.
+				function configsFor(source) {
+					if (source === 'nextjs') return fixtures.filter(f => f.config === 'react')
+					if (source === 'unplugin') return fixtures.filter(f => f.framework !== 'html')
+					return fixtures
+				}
+
+				// Each source accepts a different option surface, so show only what applies:
+				//  - Next.js: one dedicated react fixture, compiles every document.
+				//  - unplugin: a REAL per-bundler build (react/vue, node/browser); bundler +
+				//    assetsOutDir apply; no cjs/version/remoteAssets.
+				//  - CLI: the full CompileOptions surface, plus the static-output mode.
+				// CLI html output renders HTML from a forced node build, so the JS-bundle
+				// options drop away; only the variant list and remote/inline flags remain.
+				function refreshOptionVisibility() {
+					const source = pillValue('source')
+					const isNext = source === 'nextjs'
+					const isUnplugin = source === 'unplugin'
+					const isCli = source === 'cli'
+					const isHtmlOutput = isCli && pillValue('output') === 'html'
+
+					showField('output', isCli)
+					showField('variants', isHtmlOutput)
+
+					showField('bundler', isUnplugin)
+					showField('assetsOutDir', isUnplugin)
+					showField('target', !isHtmlOutput)
+					showField('bundle', (isCli || isNext) && !isHtmlOutput)
+					showField('external', (isCli || isNext) && !isHtmlOutput)
+					showField('version', isCli && !isHtmlOutput)
+					showField('bundleName', !isHtmlOutput)
+					$('assets').closest('.field').style.display = isHtmlOutput ? 'none' : ''
+
+					setPillVisible('flags', 'cjs', isCli && !isHtmlOutput)
+					setPillVisible('flags', 'remoteAssets', isCli)
+					setPillVisible('flags', 'inlineRemoteCss', true)
+					$('cmd').closest('.field').style.display = isNext ? 'none' : ''
+				}
+
+				function syncSource() {
+					const source = pillValue('source')
+
+					const allowed = configsFor(source)
+					const keepConfig = allowed.some(f => f.config === configSel.value) ? configSel.value : allowed[0].config
+					configSel.innerHTML = allowed
+						.map(f => `<option value="${f.config}">${f.config} (${f.framework})</option>`)
+						.join('')
+					configSel.value = keepConfig
+
+					setTargetPills(source === 'unplugin' ? ['node', 'browser'] : ['node', 'browser', 'worker'])
+
+					refreshOptionVisibility()
+					fillDocuments()
+					loadInputs()
+					commandPreview()
+				}
+				configSel.addEventListener('change', () => {
+					fillDocuments()
+					loadInputs()
+					commandPreview()
+				})
+				$('document').addEventListener('change', () => {
+					loadInputs()
+					commandPreview()
+				})
+
+				// Pill pickers: radio selects one, checkbox toggles many; source reshapes.
+				document.querySelectorAll('.pills').forEach(group => {
+					group.addEventListener('click', event => {
+						const pill = event.target.closest('.pill')
+						if (!pill || pill.classList.contains('hidden')) return
+						if (group.dataset.mode === 'checkbox') {
+							pill.classList.toggle('on')
+						} else {
+							group.querySelectorAll('.pill').forEach(other => other.classList.toggle('on', other === pill))
+						}
+						if (group.id === 'source') {
+							syncSource()
+							return
+						}
+						if (group.id === 'output') {
+							refreshOptionVisibility()
+						}
+						commandPreview()
+					})
+				})
+
+				// Any text/select tweak updates the equivalent command live.
+				document.querySelectorAll('.controls select, .controls input').forEach(el => {
+					el.addEventListener('change', commandPreview)
+					el.addEventListener('input', commandPreview)
+				})
+
+				fillDocuments()
+				syncSource()
+			}
+
+			function activateTab(name) {
+				document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === name))
+				document.querySelectorAll('.tab-body > section').forEach(s => s.classList.remove('active'))
+				$('tab-' + name).classList.add('active')
+			}
+			document.querySelectorAll('.tabs button').forEach(btn => {
+				btn.addEventListener('click', () => activateTab(btn.dataset.tab))
+			})
+			$('run').addEventListener('click', compile)
+
+			// Reveal the input/output dir in Finder or VS Code (local dev only).
+			document.querySelectorAll('.reveal').forEach(btn => {
+				btn.addEventListener('click', async () => {
+					const app = btn.dataset.app
+					const params =
+						btn.dataset.reveal === 'out'
+							? currentId
+								? `id=${encodeURIComponent(currentId)}`
+								: null
+							: `config=${encodeURIComponent($('config').value)}&document=${encodeURIComponent($('document').value)}`
+					if (!params) {
+						setStatus('Compile first to reveal the output dir.', '')
+						return
+					}
+					const res = await fetch(`/api/reveal?${params}&app=${app}`)
+					if (!res.ok) {
+						const data = await res.json().catch(() => ({}))
+						setStatus(data.error || `Could not open ${app}.`, '')
+					}
+				})
+			})
+
+			loadFixtures()
+		</script>
+	</body>
+</html>

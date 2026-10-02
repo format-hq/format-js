@@ -1,0 +1,32 @@
+<template data-type="document" data-title="Welcome to Format">
+	<template data-type="layout" id="page" data-width="793.71px" data-height="1122.52px">
+		<header class="header">
+			<small class="header-title">Format Studio &ndash; Welcome document</small>
+		</header>
+		<main class="content">
+			<template data-type="flow" data-split-granularity="word">
+				<%~ include('./pages/Cover/cover.html', data) %>
+				<template data-type="page-break"></template>
+				<%~ include('./pages/NextSteps/next-steps.html', data) %>
+				<template data-type="page-break"></template>
+				<%~ include('./pages/FeatureShowcase/feature-showcase.html', data) %>
+				<template data-type="page-break"></template>
+				<%~ include('./pages/Close/close.html', data) %>
+			</template>
+		</main>
+		<template data-type="footnotes"></template>
+		<footer class="footer">
+			<div class="footer-stamp">
+				Created with
+				<a href="https://format.dev">
+					<img src="./logo.svg" alt="Format logo" class="footer-logo" />
+				</a>
+			</div>
+			<div class="page-numbers">
+				<span data-type="page-number"></span>
+				of
+				<span data-type="page-count"></span>
+			</div>
+		</footer>
+	</template>
+</template>

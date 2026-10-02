@@ -1,0 +1,72 @@
+name: CI
+
+# What a pull request against this repository runs.
+#
+# The packages are built, packed once, and the tarballs are held to the same
+# checks a release runs over them: the content rules, `publint --strict`, and
+# `attw`. Those catch what a build and a typecheck cannot see — an `exports`
+# path that resolves to nothing, a file left out of `files`, a type that only
+# ever resolved through the workspace — and every one of them fails for the
+# first person to install the package and for nobody before them.
+#
+# Format's test suites are not here. They live in the private monorepo with the
+# fixtures and harnesses they need, and they run there against every change,
+# including the ones that become the snapshots in this repository. So a green
+# run here means the packages build and are shaped correctly for npm, which is
+# less than the private gate proves and is still worth knowing before a change
+# is ported.
+#
+# The work is `build/publish`, which ships here from the same commit as the
+# packages. A release runs the identical modules, so nothing this workflow
+# approves can differ from what a release would check.
+
+on:
+  pull_request:
+
+# Newer pushes to the same pull request supersede in-flight runs.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Read-only throughout. Nothing here publishes, and no job may mint an OIDC
+# token: the identity npm accepts is granted to one job in publish.yml alone.
+permissions:
+  contents: read
+
+jobs:
+  packages:
+    name: the packages build, pack and check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      # Third-party actions are pinned by commit rather than by tag. A tag like
+      # `v6` is mutable, so whoever controls the action can repoint it at new
+      # code that then runs here; a commit cannot change under us.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      # The same Node a release runs on, so a package that builds here builds
+      # there. The exact patch is checked in, and the step below asserts the
+      # runner actually handed it over.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.19.0
+          cache: pnpm
+
+      - name: The toolchain is the one this repository pins
+        run: node build/publish/toolchain.ts
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck the public build tooling
+        run: pnpm typecheck:release
+
+      # This builds the workspace itself, then packs it. Building separately
+      # first would build everything twice, and a build staged apart from the
+      # pack could produce output the pack never saw.
+      - name: Build, pack and check the packages
+        run: pnpm check:packages

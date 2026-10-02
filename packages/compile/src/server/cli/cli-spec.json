@@ -1,0 +1,137 @@
+{
+	"commands": [
+		{
+			"name": "compile",
+			"description": "Compile a document renderer, for use with the Format API.",
+			"options": [
+				{
+					"field": "documents",
+					"flags": "--documents <documents...>",
+					"description": "Specify documents to compile. Passing no value will compile all documents.",
+					"type": "string[]",
+					"parser": "comma-separated"
+				},
+				{
+					"field": "assets",
+					"flags": "--assets <mode>",
+					"description": "Defines the strategy to zipping assets.",
+					"type": "string",
+					"choices": ["static", "dynamic", "none"]
+				},
+				{
+					"field": "remoteAssets",
+					"flags": "--remote-assets",
+					"description": "Fetch remote asset references at compile time and bundle them into each document's `assets.zip`. Generally not recommend.",
+					"type": "boolean",
+					"defaultValue": false
+				},
+				{
+					"field": "inlineRemoteCss",
+					"flags": "--inline-remote-css",
+					"summary": "Inline the contents of any remote CSS files at compile time.",
+					"description": "Inline the contents of any remote CSS files at compile time. Makes PDF generation more performant, with the trade-off of caching all CSS at the point of bundling the renderer.",
+					"type": "boolean",
+					"defaultValue": false
+				},
+				{
+					"field": "preset",
+					"flags": "--preset <preset>",
+					"description": "Sets sensible defaults for `--target`, dependency strategy, and package export resolution.",
+					"type": "string",
+					"choices": ["node", "browser", "edge"]
+				},
+				{
+					"field": "target",
+					"flags": "--target <target>",
+					"description": "Sets which JavaScript environment your code will be run in \u2014 node, browser or worker.",
+					"type": "string",
+					"choices": ["node", "browser", "worker"]
+				},
+				{
+					"field": "external",
+					"flags": "--external <lib...>",
+					"description": "Packages to leave out of the bundle for browser and worker. These must be available where you call render.",
+					"type": "string[]",
+					"parser": "comma-separated"
+				},
+				{
+					"field": "bundle",
+					"flags": "--bundle <lib...>",
+					"description": "Packages to include into the bundle for node and worker targets.",
+					"type": "string[]",
+					"parser": "comma-separated"
+				},
+				{
+					"field": "conditions",
+					"flags": "--conditions <conditions...>",
+					"description": "Additional export conditions used when resolving bundled dependencies. Appended to any preset defaults.",
+					"type": "string[]",
+					"parser": "comma-separated"
+				},
+				{
+					"field": "externalConditions",
+					"flags": "--external-conditions <conditions...>",
+					"description": "Additional export conditions used when resolving externalized packages. Appended to any preset defaults.",
+					"type": "string[]",
+					"parser": "comma-separated"
+				},
+				{
+					"field": "output",
+					"flags": "--output <mode>",
+					"description": "What compile emits. A JavaScript bundle or plain HTML.",
+					"type": "string",
+					"choices": ["renderer", "html"],
+					"defaultValue": "renderer"
+				},
+				{
+					"field": "variants",
+					"flags": "--variants <variants...>",
+					"description": "Limit `--output html` to specific data variants. Defaults to every variant each document has. Ignored with `--output renderer`.",
+					"type": "string[]",
+					"parser": "comma-separated"
+				},
+				{
+					"field": "cjs",
+					"flags": "--cjs",
+					"description": "Output a CommonJS compatible bundle, as opposed to the default ESM.",
+					"type": "boolean",
+					"defaultValue": false
+				},
+				{
+					"field": "bundleName",
+					"flags": "--bundle-name <name>",
+					"description": "The package name for the compiled renderer, output in the package.json. Useful if you plan to publish your renderer to a package repository.",
+					"type": "string"
+				},
+				{
+					"field": "version",
+					"flags": "--version <version>",
+					"description": "Version to set in the compiled bundle's package.json. When set, the bundle is ready to publish. When omitted, private: true is included instead as a publishing guard.",
+					"type": "string"
+				},
+				{
+					"field": "validateSchema",
+					"flags": "--no-validate-schema",
+					"summary": "Disables data validation against your schema when calling render",
+					"description": "Disables data validation against your schema when calling render. Switch this off if you plan to validate yourself or are prone to taking risks. [Read more about data and schema](/docs/studio/data-and-variants#schemas).",
+					"type": "boolean",
+					"defaultValue": true
+				},
+				{
+					"field": "outDir",
+					"flags": "--out-dir <path>",
+					"description": "Override the base output directory for the compiled Format bundle. Value must not be the same as `rootDir`.",
+					"type": "string",
+					"defaultValue": "<rootDir>/_generated"
+				},
+				{
+					"field": "clean",
+					"flags": "--no-clean",
+					"description": "Disabled removing the output directory before compiling.",
+					"type": "boolean",
+					"defaultValue": true
+				}
+			]
+		}
+	]
+}

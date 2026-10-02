@@ -1,0 +1,4 @@
+# Font-regeneration toolchain (only needed to run `pnpm build:fonts` / `check:fonts`;
+# the normal `pnpm build` and consumers do not need Python — fonts/ is committed).
+fonttools>=4.60
+brotli>=1.1

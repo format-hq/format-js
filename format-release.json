@@ -1,0 +1,18 @@
+{
+	"jsVersion": "0.1.0",
+	"engineTarget": "0.1.0",
+	"packages": [
+		"@format.dev/react",
+		"@format.dev/vue",
+		"@format.dev/studio",
+		"@format.dev/compile",
+		"@format.dev/cli",
+		"@format.dev/client",
+		"@format.dev/zip",
+		"@format.dev/fonts",
+		"@format.dev/types",
+		"@format.dev/utils",
+		"@format.dev/react-mathml-types",
+		"create-format"
+	]
+}

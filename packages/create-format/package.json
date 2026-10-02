@@ -1,0 +1,37 @@
+{
+	"name": "create-format",
+	"description": "Create a new format project",
+	"version": "0.1.0",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/format-hq/format-js.git",
+		"directory": "packages/create-format"
+	},
+	"type": "module",
+	"bin": "./dist/index.mjs",
+	"files": [
+		"dist",
+		"LICENSE"
+	],
+	"scripts": {
+		"clean": "rimraf dist",
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"dev:template:react": "cd ../cli/templates/react && node ../../../../apps/studio/bin/format-studio dev",
+		"dev:template:vue": "cd ../cli/templates/vue && node ../../../../apps/studio/bin/format-studio dev",
+		"dev:template:html": "cd ../cli/templates/html && node ../../../../apps/studio/bin/format-studio dev"
+	},
+	"dependencies": {
+		"@format.dev/cli": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/node": "^24.10.4",
+		"rimraf": "catalog:",
+		"tsdown": "catalog:",
+		"typescript": "catalog:"
+	},
+	"engines": {
+		"node": ">=22.12.0"
+	}
+}

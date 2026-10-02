@@ -1,0 +1,87 @@
+{
+	"name": "@format.dev/cli",
+	"version": "0.1.0",
+	"license": "MIT",
+	"description": "The Format CLI: run Studio, compile documents, and keep Format packages in lockstep",
+	"author": "the format.dev developers",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/format-hq/format-js.git",
+		"directory": "packages/cli"
+	},
+	"type": "module",
+	"bin": {
+		"format": "./bin/format.mjs"
+	},
+	"exports": {
+		"./config": {
+			"types": "./dist/config.d.mts",
+			"default": "./dist/config.mjs"
+		},
+		"./scaffold": {
+			"types": "./dist/scaffold.d.mts",
+			"default": "./dist/scaffold.mjs"
+		},
+		"./scaffold/shared": {
+			"types": "./dist/scaffold-shared.d.mts",
+			"default": "./dist/scaffold-shared.mjs"
+		},
+		"./lockstep": {
+			"types": "./dist/lockstep.d.mts",
+			"default": "./dist/lockstep.mjs"
+		},
+		"./random-name": {
+			"types": "./dist/random-name.d.mts",
+			"default": "./dist/random-name.mjs"
+		},
+		"./package.json": "./package.json",
+		"./tsconfig.recommended": "./tsconfig.recommended.json",
+		"./env": {
+			"types": "./env.d.ts"
+		}
+	},
+	"files": [
+		"bin",
+		"dist",
+		"templates",
+		"tsconfig.recommended.json",
+		"env.d.ts",
+		"LICENSE"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"clean": "rimraf dist",
+		"build": "tsdown",
+		"dev": "tsdown -c tsdown.config.dev.ts --watch",
+		"typecheck": "tsc -p tsconfig.json --noEmit"
+	},
+	"dependencies": {
+		"@clack/prompts": "^1.7.0",
+		"commander": "^14.0.3",
+		"jsonc-parser": "^3.3.1",
+		"picocolors": "^1.1.1",
+		"unique-names-generator": "^4.7.1"
+	},
+	"devDependencies": {
+		"@format.dev/react": "workspace:*",
+		"@format.dev/vue": "workspace:*",
+		"@types/node": "^24.10.4",
+		"@types/react": "catalog:",
+		"@types/react-dom": "catalog:",
+		"react": "catalog:",
+		"react-dom": "catalog:",
+		"rimraf": "catalog:",
+		"tailwindcss": "^4.1.18",
+		"tsdown": "catalog:",
+		"typescript": "catalog:",
+		"valibot": "^1.1.0",
+		"verdaccio": "^6.8.0",
+		"vitest": "^4.0.18",
+		"vue": "catalog:"
+	},
+	"engines": {
+		"node": ">=22.12.0"
+	}
+}
