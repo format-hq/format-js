@@ -334,7 +334,7 @@ export async function generateEntry(
 	const suppressRolldownLogs = (_level: string, ...args: unknown[]) => {
 		const msg = args.join(' ')
 
-		if (msg.includes('rolldown-vite') && msg.includes('building')) return false
+		if (msg.includes('vite v') && msg.includes('building')) return false
 		if (msg.includes('built in')) return false
 
 		return true

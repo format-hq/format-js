@@ -95,7 +95,7 @@ async function handleDevInit(request: DevInitRequest): Promise<void> {
 	const serverConfig = mergeConfig(baseViteConfig, {
 		configFile: false,
 		clearScreen: false,
-		envFile: false, // Block .env file loading — primary .env protection
+		envDir: false, // Block .env file loading — primary .env protection
 		cacheDir: join(tmpdir(), 'format-vite-cache'),
 		logLevel: 'info',
 		customLogger: workerLogger,

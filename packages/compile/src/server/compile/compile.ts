@@ -1210,7 +1210,7 @@ async function runCompile(runArgs: RunCompileArgs): Promise<StructuredOutput[]> 
 		const msg = args.join(' ')
 
 		if (msg.includes('building SSR bundle for production')) return false
-		if (msg.includes('rolldown-vite') && msg.includes('building')) return false
+		if (msg.includes('vite v') && msg.includes('building')) return false
 		if (msg.includes('built in')) return false
 
 		return true

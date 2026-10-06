@@ -330,6 +330,9 @@ export function makeViteBuildConfig(i: BuildConfigInput): UserConfig {
 		input: rollupInput,
 		preserveEntrySignatures: 'strict' as const,
 		treeshake: false, // I'm slightly nervous about treeshaking, so I've gone with false for now.
+		// Rolldown otherwise heads each module in the output with a comment naming its
+		// source path, which spells out the project's directory layout.
+		experimental: { attachDebugInfo: 'none' as const },
 		output: {
 			format,
 			entryFileNames: (chunkInfo: PreRenderedChunk) => `${chunkInfo.name}/${compiledFileName}`,
@@ -341,13 +344,16 @@ export function makeViteBuildConfig(i: BuildConfigInput): UserConfig {
 				chunkInfo.name === 'styles' || chunkInfo.name === 'rolldown-runtime'
 					? `chunks/${chunkInfo.name}.js`
 					: 'chunks/[name]-[hash].js',
-			manualChunks: (id: string) => {
-				// Force virtual:styles into a shared chunk.
-				if (id === VIRTUAL_STYLES_MODULE_ID) {
-					return 'styles'
-				}
-				return undefined
+			// Force virtual:styles into a shared chunk. Vite turns code splitting off
+			// for a single-document worker build unless this option is set, and the
+			// styles chunk would then fold into the entry.
+			codeSplitting: {
+				groups: [{ name: 'styles', test: (id: string) => id === VIRTUAL_STYLES_MODULE_ID }]
 			},
+			// Compiled documents carry no legal or JSDoc comments. Vite keeps both in
+			// an unminified build, and the JSDoc from bundled dependencies made test
+			// documents 12–18% larger, which counts against a worker's size limit.
+			comments: { legal: false, jsdoc: false },
 			// Each entry deliberately ships a named export (the document's export
 			// name) alongside a default. 'auto' can't pick a CJS shape when both are
 			// present and warns (MIXED_EXPORT); 'named' makes the choice explicit and
