@@ -20,14 +20,18 @@ function normalisePackageName(name: string): string {
 	return `@format.dev/${name}`
 }
 
-function installArgs(packageManager: PackageManager, packages: string[], dev: boolean): string[] {
+// Every manager is told to save the exact version. npm, yarn, and bun would
+// otherwise write `^<version>`, which the lockstep check reports as drift.
+export function installArgs(packageManager: PackageManager, packages: string[], dev: boolean): string[] {
 	const saveFlag = dev ? '-D' : ''
 
 	switch (packageManager) {
 		case 'npm':
-			return ['install', ...(dev ? ['--save-dev'] : []), ...packages]
+			return ['install', '--save-exact', ...(dev ? ['--save-dev'] : []), ...packages]
+		case 'pnpm':
+			return ['add', '--save-exact', ...(saveFlag ? [saveFlag] : []), ...packages]
 		default:
-			return ['add', ...(saveFlag ? [saveFlag] : []), ...packages]
+			return ['add', '--exact', ...(saveFlag ? [saveFlag] : []), ...packages]
 	}
 }
 

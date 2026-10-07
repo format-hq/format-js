@@ -21730,6 +21730,7 @@ function L_({ message: e }) {
 			"strong",
 			"em",
 			"code",
+			"pre",
 			"a",
 			"br",
 			"ul",
@@ -21762,7 +21763,6 @@ var R_ = (e) => {
 }, z_ = {
 	overlay: "fmt-FoF-M2PE",
 	documentOverlay: "fmt-UMC8S4dJ",
-	documentPanel: "fmt-L45PSNZA",
 	panel: "fmt-CRyWJ5A-",
 	wide: "fmt-HDASqjpC",
 	items: "fmt-xLzIvueO",
@@ -21870,7 +21870,7 @@ function W_({ error: e }) {
 		a(t.length > 0), R_(!1);
 	}, [t.length]);
 	let d = u.length;
-	if ((0, v.useEffect)(() => {
+	(0, v.useEffect)(() => {
 		let e = d > 0;
 		if (e !== document.body.classList.contains("is-locked")) {
 			if (e) {
@@ -21879,7 +21879,15 @@ function W_({ error: e }) {
 			}
 			document.body.classList.remove("is-locked"), document.body.style.top = "", window.scrollTo(0, c.current);
 		}
-	}, [d]), (0, v.useEffect)(() => {
+	}, [d]);
+	let f = l.length > 0;
+	if ((0, v.useEffect)(() => {
+		if (!f) return;
+		let e = document.querySelector("#format-pages");
+		return document.documentElement.classList.add("has-document-error"), e?.setAttribute("inert", ""), () => {
+			document.documentElement.classList.remove("has-document-error"), e?.removeAttribute("inert");
+		};
+	}, [f]), (0, v.useEffect)(() => {
 		if (!t.some((e) => e.kind === "auth")) return;
 		o.current?.parentElement && (s.current = o.current.parentElement);
 		let e = window.setInterval(() => {
@@ -21888,24 +21896,24 @@ function W_({ error: e }) {
 		}, 5e3);
 		return () => window.clearInterval(e);
 	}, [t]), !i || t.length === 0) return null;
-	let f = (e) => e.some((e) => !!e.stack) ? z_.wide : "", p = u.every((e) => V_(e));
+	let p = (e) => e.some((e) => !!e.stack) ? z_.wide : "", m = u.every((e) => V_(e));
 	return /* @__PURE__ */ (0, R.jsxs)(R.Fragment, { children: [u.length > 0 && /* @__PURE__ */ (0, R.jsx)(Ql, {
 		ref: (e) => {
 			o.current = e, e?.parentElement && (s.current = e.parentElement);
 		},
-		className: `${z_.panel} ${f(u)}`,
+		className: `${z_.panel} ${p(u)}`,
 		overlayClassName: z_.overlay,
 		"data-error-overlay": "true",
 		children: /* @__PURE__ */ (0, R.jsx)(U_, {
 			errors: u,
-			onDismiss: p ? () => u.forEach((e) => r(e.id)) : void 0
+			onDismiss: m ? () => u.forEach((e) => r(e.id)) : void 0
 		})
 	}), l.length > 0 && /* @__PURE__ */ (0, R.jsx)("div", {
 		className: z_.documentOverlay,
 		"data-error-overlay": "document",
 		children: /* @__PURE__ */ (0, R.jsx)("div", {
 			role: "alert",
-			className: `${$l} ${z_.documentPanel} ${z_.panel} ${f(l)}`,
+			className: `${$l} ${z_.panel} ${p(l)}`,
 			children: /* @__PURE__ */ (0, R.jsx)(U_, { errors: l })
 		})
 	})] });

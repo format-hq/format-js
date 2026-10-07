@@ -584,12 +584,6 @@ async function compileBundle(args: CompileBundleArgs): Promise<StructuredOutput[
 		const dataDir = getDocumentDataDir(documentName, config)
 		const schemaPath = await getSchemaPath(dataDir)
 
-		if (options.validateSchema && !schemaPath) {
-			throw new Error(
-				`Schema file not found. Either use --no-validate-schema to disable schema validation or ensure you are using a valid schema file.`
-			)
-		}
-
 		buildDocuments.push({
 			name: documentName,
 			entryFilePath,
@@ -730,6 +724,14 @@ async function compileBundle(args: CompileBundleArgs): Promise<StructuredOutput[
 
 		if (assetMode === 'static') {
 			const staticAssets = await buildDocumentStaticAssets(sources, resolve(stagingRoot, document.name))
+			const unsupportedCount = staticAssets.unsupported.length
+
+			if (unsupportedCount > 0) {
+				logger.warn(
+					`⚠ Skipped ${unsupportedCount} ${pluralize('file', unsupportedCount)} in the assets for ${document.name} ` +
+						`that renders can't use: ${staticAssets.unsupported.join(', ')}. Renders accept fonts, images, CSS, and JSON.`
+				)
+			}
 
 			if (staticAssets.zip) {
 				await mkdir(getDocumentOutDir(outDir, document.name), { recursive: true })

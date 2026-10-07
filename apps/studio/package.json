@@ -2,7 +2,7 @@
 	"name": "@format.dev/studio",
 	"module": "./dist/node/index.js",
 	"type": "module",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"license": "Elastic-2.0",
 	"repository": {
 		"type": "git",
@@ -33,12 +33,12 @@
 		"access": "public"
 	},
 	"dependencies": {
-		"@format.dev/cli": "0.1.1",
-		"@format.dev/client": "0.1.1",
-		"@format.dev/compile": "0.1.1",
-		"@format.dev/fonts": "0.1.1",
-		"@format.dev/utils": "0.1.1",
-		"@format.dev/zip": "0.1.1",
+		"@format.dev/cli": "0.1.2",
+		"@format.dev/client": "0.1.2",
+		"@format.dev/compile": "0.1.2",
+		"@format.dev/fonts": "0.1.2",
+		"@format.dev/utils": "0.1.2",
+		"@format.dev/zip": "0.1.2",
 		"@inquirer/prompts": "^7.10.1",
 		"@radix-ui/react-focus-scope": "^1.1.7",
 		"@radix-ui/react-slider": "^1.4.0",
@@ -61,8 +61,8 @@
 		"vite": "8.3.2"
 	},
 	"devDependencies": {
-		"@format.dev/react": "0.1.1",
-		"@format.dev/vue": "0.1.1",
+		"@format.dev/react": "0.1.2",
+		"@format.dev/vue": "0.1.2",
 		"@storybook/addon-a11y": "10.6.1",
 		"@storybook/react-vite": "10.6.1",
 		"@testing-library/react": "^16.3.0",

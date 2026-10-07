@@ -54,22 +54,22 @@ importers:
   apps/studio:
     dependencies:
       '@format.dev/cli':
-        specifier: 0.1.1
+        specifier: 0.1.2
         version: link:../../packages/cli
       '@format.dev/client':
-        specifier: 0.1.1
+        specifier: 0.1.2
         version: link:../../packages/client
       '@format.dev/compile':
-        specifier: 0.1.1
+        specifier: 0.1.2
         version: link:../../packages/compile
       '@format.dev/fonts':
-        specifier: 0.1.1
+        specifier: 0.1.2
         version: link:../../packages/fonts
       '@format.dev/utils':
-        specifier: 0.1.1
+        specifier: 0.1.2
         version: link:../../packages/utils
       '@format.dev/zip':
-        specifier: 0.1.1
+        specifier: 0.1.2
         version: link:../../packages/zip
       '@inquirer/prompts':
         specifier: ^7.10.1
@@ -136,10 +136,10 @@ importers:
         version: 8.3.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(sass-embedded@1.102.0)(sass@1.102.0)(tsx@4.23.12)
     devDependencies:
       '@format.dev/react':
-        specifier: 0.1.1
+        specifier: 0.1.2
         version: link:../../packages/react
       '@format.dev/vue':
-        specifier: 0.1.1
+        specifier: 0.1.2
         version: link:../../packages/vue
       '@storybook/addon-a11y':
         specifier: 10.6.1

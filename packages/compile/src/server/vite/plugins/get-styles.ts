@@ -64,11 +64,6 @@ function collectCssForEntry(args: {
 		}
 	}
 
-	if (orderedCss.length === 0) {
-		// Fallback to all CSS when Vite doesn't report importedCss.
-		return [...stylesByFile.keys()]
-	}
-
 	return orderedCss
 }
 
@@ -109,6 +104,14 @@ export function getStyles() {
 					// Map for fast graph traversal.
 					chunksByFileName.set(fileName, item)
 				}
+			}
+
+			const hasViteMetadata = [...chunksByFileName.values()].some(chunk => (chunk as any).viteMetadata)
+
+			if (!hasViteMetadata) {
+				throw new Error(
+					'get-styles: no chunk has viteMetadata, so CSS cannot be matched to documents. Vite sets it on every chunk, so a Vite upgrade has likely renamed or removed it.'
+				)
 			}
 
 			for (const item of Object.values(bundle)) {

@@ -113,7 +113,7 @@
 					"field": "validateSchema",
 					"flags": "--no-validate-schema",
 					"summary": "Disables data validation against your schema when calling render",
-					"description": "Disables data validation against your schema when calling render. Switch this off if you plan to validate yourself or are prone to taking risks. [Read more about data and schema](/docs/studio/data-and-variants#schemas).",
+					"description": "Disables data validation against your schema when calling render. Switch this off if you plan to validate yourself or are prone to taking risks. Documents without a schema are never validated. [Read more about data and schema](/docs/studio/data-and-variants#schemas).",
 					"type": "boolean",
 					"defaultValue": true
 				},
@@ -127,7 +127,7 @@
 				{
 					"field": "clean",
 					"flags": "--no-clean",
-					"description": "Disabled removing the output directory before compiling.",
+					"description": "Leaves files already in the output directory in place instead of deleting them. Files from an earlier compile stay on disk, but the new bundle only includes the documents you compile now.",
 					"type": "boolean",
 					"defaultValue": true
 				}

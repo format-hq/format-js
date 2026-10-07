@@ -1,5 +1,5 @@
 {
-	"jsVersion": "0.1.1",
+	"jsVersion": "0.1.2",
 	"engineTarget": "0.1.0",
 	"packages": [
 		"@format.dev/react",

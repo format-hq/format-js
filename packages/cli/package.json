@@ -1,6 +1,6 @@
 {
 	"name": "@format.dev/cli",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"license": "MIT",
 	"description": "The Format CLI: run Studio, compile documents, and keep Format packages in lockstep",
 	"author": "the format.dev developers",

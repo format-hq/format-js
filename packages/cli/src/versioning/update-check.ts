@@ -4,10 +4,10 @@ import { join } from 'node:path'
 
 import { fetchLatestVersion } from './registry.ts'
 import { isNewer, mayHaveBreakingChanges } from './semver.ts'
+import { CHANGELOG_URL } from './changelog.ts'
 
 const CACHE_FILE_NAME = 'update-check.json'
 const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000
-const CHANGELOG_URL = 'https://format.dev/changelog'
 
 interface UpdateCache {
 	checkedAt: number

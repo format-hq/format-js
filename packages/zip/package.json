@@ -1,6 +1,6 @@
 {
 	"name": "@format.dev/zip",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"license": "MIT",
 	"description": "Asset bundling for Format documents.",
 	"author": "the format.dev developers",

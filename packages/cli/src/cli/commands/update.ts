@@ -6,6 +6,10 @@ import { CliError } from '../../errors.ts'
 import { detectPackageManager, installCommand } from '../../package-manager.ts'
 import { loadProjectState } from '../../project.ts'
 import { fetchLatestVersion } from '../../versioning/registry.ts'
+import { readCliPackageVersion } from '../../versioning/cli-package.ts'
+import { environmentWithoutHandoff, handOffUpdate, readHandoffFromVersion } from '../../versioning/handoff.ts'
+import { installWithFreshFormatTree } from '../../versioning/fresh-install.ts'
+import { changelogLines } from '../../versioning/changelog.ts'
 import { isExactVersion } from '../../versioning/semver.ts'
 
 // Applies the pinned version everywhere. With no argument the config's
@@ -16,6 +20,12 @@ export async function updateCommand(cwd: string, target?: string): Promise<numbe
 	const state = await loadProjectState(cwd)
 
 	const targetVersion = await resolveTargetVersion({ target, pinnedVersion: state.pinnedVersion })
+	const cliVersion = await readCliPackageVersion()
+	const handoffFromVersion = readHandoffFromVersion()
+
+	if (handoffFromVersion === null && cliVersion !== targetVersion) {
+		return handOffUpdate({ targetVersion, fromVersion: state.pinnedVersion, cwd: state.projectDir })
+	}
 
 	if (targetVersion !== state.pinnedVersion) {
 		await writeConfigVersion({ filepath: state.configFile.filepath, version: targetVersion })
@@ -51,10 +61,25 @@ export async function updateCommand(cwd: string, target?: string): Promise<numbe
 	console.log('')
 	console.log(`Installing with ${packageManager}...`)
 
-	await runInstall({ command, args, cwd: state.projectDir })
+	await installWithFreshFormatTree({
+		packageJsonPath: state.packageJsonPath,
+		install: () => runInstall({ command, args, cwd: state.projectDir })
+	})
 
 	console.log('')
 	console.log(`Done. Your project is on Format ${targetVersion}.`)
+
+	const fromVersion = handoffFromVersion ?? state.pinnedVersion
+	const hasMovedVersion = fromVersion !== null && fromVersion !== 'none' && fromVersion !== targetVersion
+
+	if (hasMovedVersion) {
+		const lines = await changelogLines({ fromVersion, toVersion: targetVersion })
+
+		if (lines.length > 0) {
+			console.log('')
+			lines.forEach(line => console.log(line))
+		}
+	}
 
 	return 0
 }
@@ -101,7 +126,12 @@ async function runInstall(args: RunInstallArgs): Promise<void> {
 	const { command, args: commandArgs, cwd } = args
 
 	await new Promise<void>((resolvePromise, rejectPromise) => {
-		const child = spawn(command, commandArgs, { cwd, stdio: 'inherit', shell: process.platform === 'win32' })
+		const child = spawn(command, commandArgs, {
+			cwd,
+			stdio: 'inherit',
+			shell: process.platform === 'win32',
+			env: environmentWithoutHandoff()
+		})
 
 		child.on('error', error => {
 			rejectPromise(new CliError(`Failed to run ${command} install: ${error.message}`))

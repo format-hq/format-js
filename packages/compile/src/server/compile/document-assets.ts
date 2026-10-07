@@ -1,7 +1,8 @@
 import type { FormatConfig } from '../../shared/types'
 
-import { basename, dirname, join, relative, resolve } from 'node:path'
+import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { cp, mkdir, readdir, rm, stat } from 'node:fs/promises'
+import { isUserAssetExtension } from '@format.dev/utils'
 import { zipDir, isSystemJunkFile } from '@format.dev/zip'
 import { getSharedAssetsDir } from '../project/paths'
 import { checkDir } from '../utils'
@@ -112,6 +113,14 @@ export interface StaticAssetsResult {
 	known: string[]
 	/** The merged archive, or undefined when the document has no assets. */
 	zip: Uint8Array | undefined
+	/** Files left out because renders can't use their type, such as a font licence `.txt`. */
+	unsupported: string[]
+}
+
+// The same check the render API applies when it unpacks the zip. It refuses the
+// whole archive over one unknown type, so these files must never reach it.
+function isRenderableAsset(file: string) {
+	return isUserAssetExtension(extname(file).slice(1).toLowerCase())
 }
 
 /**
@@ -134,10 +143,15 @@ export async function buildDocumentStaticAssets(
 	}
 
 	try {
-		const known = await listFiles(stagingDir)
+		const files = await listFiles(stagingDir)
+		const known = files.filter(file => isRenderableAsset(file))
+		const unsupported = files.filter(file => !isRenderableAsset(file))
+
+		await Promise.all(unsupported.map(file => rm(join(stagingDir, file), { force: true })))
+
 		const zip = await zipDir(stagingDir)
 
-		return { known, zip }
+		return { known, zip, unsupported }
 	} finally {
 		await rm(stagingDir, { recursive: true, force: true }).catch(() => {})
 	}

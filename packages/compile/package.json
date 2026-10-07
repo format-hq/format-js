@@ -1,6 +1,6 @@
 {
 	"name": "@format.dev/compile",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"license": "MIT",
 	"description": "Compile Format documents into renderers, without the Studio UI",
 	"author": "the format.dev developers",
