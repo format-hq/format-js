@@ -1,6 +1,6 @@
 {
 	"name": "@format.dev/fonts",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"license": "(MIT AND OFL-1.1)",
 	"description": "Format's built-in font families (Sans/Serif/Mono/Emoji/Math/Tofu) as a single source of truth: static weight palettes + optical cuts + variable masters, with an @font-face CSS generator. Consumed identically by the previews and the PDF renderer so they never diverge.",
 	"author": "the format.dev developers",

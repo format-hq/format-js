@@ -1,6 +1,6 @@
 {
 	"name": "@format.dev/types",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"license": "MIT",
 	"description": "Shared type declarations for the Format SDKs.",
 	"author": "the format.dev developers",

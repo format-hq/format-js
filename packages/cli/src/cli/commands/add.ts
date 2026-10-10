@@ -27,7 +27,7 @@ export function installArgs(packageManager: PackageManager, packages: string[], 
 
 	switch (packageManager) {
 		case 'npm':
-			return ['install', '--save-exact', ...(dev ? ['--save-dev'] : []), ...packages]
+			return ['install', '--no-fund', '--save-exact', ...(dev ? ['--save-dev'] : []), ...packages]
 		case 'pnpm':
 			return ['add', '--save-exact', ...(saveFlag ? [saveFlag] : []), ...packages]
 		default:

@@ -61,7 +61,7 @@ export async function detectPackageManager(projectDir: string): Promise<PackageM
 
 export function installCommand(packageManager: PackageManager): { command: string; args: string[] } {
 	if (packageManager === 'npm') {
-		return { command: 'npm', args: ['install'] }
+		return { command: 'npm', args: ['install', '--no-fund'] }
 	}
 
 	// The CLI's installs (update, add, scaffold) deliberately change or add

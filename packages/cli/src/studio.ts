@@ -131,9 +131,14 @@ async function spawnStudioForProject(
 
 	const packageSpec = `${target.packageName}@${state.pinnedVersion}`
 
+	// The exact spec is what pins the version. --prefer-offline would make npm
+	// trust cached package metadata that predates a new release, so fetching
+	// it (or a newer dependency of it) fails with ETARGET. One quick retry
+	// covers a slow registry response, while an offline machine still falls
+	// back to the cache in about a second instead of after a minute of backoff.
 	return spawnStudio(
 		'npm',
-		['exec', '-y', '--prefer-offline', '--', packageSpec, ...argv],
+		['exec', '-y', '--fetch-retries=1', '--fetch-retry-mintimeout=1000', '--', packageSpec, ...argv],
 		state.projectDir,
 		keepAliveOnSignal
 	)
