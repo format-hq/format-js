@@ -1,6 +1,6 @@
 {
-	"jsVersion": "0.1.3",
-	"engineTarget": "0.1.0",
+	"jsVersion": "0.2.0",
+	"engineTarget": "0.2.0",
 	"packages": [
 		"@format.dev/react",
 		"@format.dev/vue",

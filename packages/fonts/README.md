@@ -35,7 +35,9 @@ A static cut embeds as a CID subset, and Format writes its text in one of two wa
 
 A glyph lands exactly only when its advance is exact in binary floating point. That advance is the glyph's stored width times the font size over the units-per-em, and the division is exact only when the units-per-em is a power of two and the size is a whole pixel. Mono's source, JetBrains Mono, carries a 1000-unit em, so the division leaves a remainder that accrues on every glyph, and Format writes a separate instruction for nearly every one.
 
-The build therefore re-ems any static face that isn't already on a power-of-two em onto a 2048-unit grid (`scale_upem` in `build-fonts.py`). Only the internal grid moves: outlines, advances, kerning, and vertical metrics all scale by the same ratio, so the face looks identical, and the largest coordinate shift lands a few thousandths of a pixel at reading size. The two 1000-em faces, Mono and the copied-through Math face, drop from one instruction per glyph to fully packed runs. Serif (1024) and Sans (2048) are already on a power-of-two em, so they pack as-is and pass through. Emoji and Tofu are colour faces the PDF draws per-glyph regardless, so they pass through too; Tofu is Format's own font, so its em is fixed on a power of two in the tofu package's generator, not here. The variable masters keep their source em, since the `fidelity` path embeds them as Type 3 and writes each glyph separately regardless of the em.
+The build therefore re-ems a static face that isn't already on a power-of-two em onto a 2048-unit grid (`scale_upem` in `build-fonts.py`). Only the internal grid moves: outlines, advances, kerning, and vertical metrics all scale by the same ratio, so the face looks identical, and the largest coordinate shift lands a few thousandths of a pixel at reading size. Mono drops from one instruction per glyph to fully packed runs. Serif (1024) and Sans (2048) are already on a power-of-two em, so they pack as-is and pass through. Emoji and Tofu are colour faces the PDF draws per-glyph regardless, so they pass through too; Tofu is Format's own font, so its em is fixed on a power of two in the tofu package's generator, not here. The variable masters keep their source em, since the `fidelity` path embeds them as Type 3 and writes each glyph separately regardless of the em.
+
+Math also carries a 1000-unit em, but the build copies it through byte-for-byte, because the rescale leaves two parts of STIX Two Math at the old em. The first is its TrueType hinting. Its control values hold 1000-unit heights, and PDFium (Chrome's built-in PDF viewer) runs a font's hinting instructions when it draws embedded text, so a rescaled Math face draws at about half height there. The second is the MATH table's integer dimensions, which MathML layout reads to size large operators and to build stretched delimiters, radicals, and accents. Mono carries neither, so its re-em stays lossless. Keeping Math on its source em means its glyphs can take the per-glyph path described above, which can make compact PDFs of math-heavy documents larger.
 
 ## Families
 
@@ -75,7 +77,7 @@ For bundlers (Vite), the package also ships the two stylesheets prebuilt — `@f
 sources/        variable masters (Sans/Serif/Mono) + static Emoji/Math/Tofu — the inputs
 manifest.json   families, weight ranges and step, optical sizes, emoji unicode-ranges
 scripts/
-  build-fonts.py   instances, rebrands, re-ems any non-power-of-two face to 2048 (Mono; Math on copy-through), and compresses the masters to woff2 + ttf; copies the static families; writes fonts/fonts.json
+  build-fonts.py   instances, rebrands, re-ems a non-power-of-two face to 2048 (Mono; Math keeps its 1000-unit em), and compresses the masters to woff2 + ttf; copies the static families; writes fonts/fonts.json
   emit-css.mjs     writes fonts/static.css and fonts/variable.css from fonts.json
 fonts/          generated, committed: woff2 + ttf, fonts.json descriptors, static.css, variable.css
 src/
@@ -93,7 +95,7 @@ pip install -r requirements.txt          # fonttools + brotli
 pnpm --filter "@format.dev/fonts" build:fonts  # rebuilds fonts/ and re-emits the stylesheets
 ```
 
-CI runs `pnpm --filter @format.dev/fonts check:fonts`, which fails if `fonts/` is stale.
+No CI job runs `check:fonts`. A rebuild stamps its own modification time into every face, and `emit-css.mjs` writes the stylesheets without the Prettier wrapping the committed copies carry, so the diff that `check:fonts` runs reports changes after any rebuild. CI checks the committed fonts in two other places. The press workflow runs this package's tests (`pnpm --filter @format.dev/fonts test`), which check that both Math deliveries, the TTF and the WOFF2, are byte-identical to their sources. In the same workflow, the PDF suite renders the engine's fixture corpus, MathML included, through the TTF faces installed in the service image, so a change to a face that press embeds fails the suite as structural or pixel drift.
 
 ## Future: demand-driven instancing
 

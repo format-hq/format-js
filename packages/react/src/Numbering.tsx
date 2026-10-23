@@ -63,13 +63,20 @@ export interface NumberingProps {
 	 * per-Counter, and per-Footnotes styles override it. Defaults to `decimal`.
 	 */
 	counterStyle?: CounterStyle
+	/**
+	 * Whether headings `h1` through `h6` get the built-in hierarchical numbers. On by
+	 * default. Set `false` when your own rules number the headings; that removes the
+	 * built-in restarts between heading levels as well as the built-in numbers.
+	 */
+	defaultHeadings?: boolean
 }
 
 /**
- * Turns on document-wide numbering. With no children it numbers headings `h1`
- * through `h6` hierarchically — `1`, `1.1`, `1.1.1` — with each level resetting
- * the ones beneath it. Add <NumberingRule> children to number other things or
- * change the format.
+ * Turns on document-wide numbering. By default it numbers headings `h1` through
+ * `h6` hierarchically — `1`, `1.1`, `1.1.1` — with each level resetting the ones
+ * beneath it. Add <NumberingRule> children to number other things; they add to the
+ * default headings. To number headings your own way, set `defaultHeadings={false}`
+ * and write rules for them.
  *
  * Numbers are resolved before pages are split, so they stay correct across page
  * breaks where plain CSS counters would reset.
@@ -81,9 +88,12 @@ export interface NumberingProps {
  * </Document>
  * ```
  */
-export function Numbering({ counterStyle, children }: PropsWithChildren<NumberingProps>) {
+export function Numbering({ counterStyle, defaultHeadings, children }: PropsWithChildren<NumberingProps>) {
 	return (
-		<Template data-type='numbering' data-counter-style={counterStyle}>
+		<Template
+			data-type='numbering'
+			data-counter-style={counterStyle}
+			data-default-headings={defaultHeadings === undefined ? undefined : defaultHeadings ? 'true' : 'false'}>
 			{children}
 		</Template>
 	)
@@ -91,8 +101,9 @@ export function Numbering({ counterStyle, children }: PropsWithChildren<Numberin
 
 /**
  * One numbering rule, used as `<NumberingRule>` inside `<Numbering>`. Each rule
- * matches a selector and advances (and optionally inserts) a counter. Add rules
- * to number things beyond the default headings, or to change the heading format.
+ * matches a selector and advances (and optionally inserts) a counter. Rules add to
+ * the default headings; to change the heading format, set
+ * `<Numbering defaultHeadings={false}>` and number the headings with rules.
  */
 export function NumberingRule({ match, counter, format, increment, set, counterStyle, insert }: NumberingRuleProps) {
 	if (

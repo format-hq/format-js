@@ -14,10 +14,13 @@ The variable masters are also emitted (opt-in path), and the already-static fami
 
 Each static face is re-emmed onto a power-of-two em (STATIC_UPEM) when it isn't
 already on one, so the PDF writer packs its glyphs into runs instead of placing
-each one individually; see reem() and the README. Only the 1000-em faces
-move (Mono, and the STIX-derived Math face); the power-of-two faces (Serif 1024,
-Sans 2048) already pack and pass through, and the variable masters keep their
-source em (the PDF embeds them as Type 3, per-glyph regardless of the em).
+each one individually; see reem() and the README. Only Mono (1000-em) moves.
+Math (STIX Two Math) is also 1000-em but keeps its source em, because the
+rescale leaves its TrueType hinting and some MATH table dimensions at the old
+em. The
+power-of-two faces (Serif 1024, Sans 2048) already pack and pass through, and
+the variable masters keep their source em (the PDF embeds them as Type 3,
+per-glyph regardless of the em).
 
 Name tables are rebranded to the durable `Format ...` identity. The script writes
 fonts/fonts.json — the descriptor list (family, weight, style, optical, deliveries,
@@ -110,18 +113,29 @@ def reem(font):
     """Re-em a plain-outline face onto STATIC_UPEM, and report whether it did.
 
     No-op (returns False) when the face is already on a power-of-two em — its
-    glyph runs already pack — or carries a COLR table: colour faces (Emoji, Tofu)
-    embed per-glyph in the PDF regardless of the em, and scale_upem covers their
-    paint graphs less thoroughly. Tofu's em belongs in its generator (the tofu
-    package), not here; Emoji is external and already 1024.
+    glyph runs already pack — or carries a COLR or MATH table. Colour faces
+    (Emoji, Tofu) embed per-glyph in the PDF regardless of the em, and scale_upem
+    covers their paint graphs less thoroughly. Tofu's em belongs in its generator
+    (the tofu package), not here; Emoji is external and already 1024.
 
     scale_upem rescales the glyf outlines, hmtx advances, GPOS value records
-    (kerning/anchors), the MATH table constants, and the head/hhea/OS-2 metrics
-    by the same ratio, so the face looks identical — only its internal grid
-    changes. It does not rescale the TrueType hinting tables
-    (cvt/fpgm/prep/instructions), but our faces carry no em-dependent hinting (the
-    only prep is dropout control, which is em-independent) and the PDF path
-    applies none anyway, so the re-em is visually lossless.
+    (kerning/anchors), the MATH value records, and the head/hhea/OS-2 metrics by
+    the same ratio. It leaves two things at the old em: the TrueType hinting
+    tables (cvt/fpgm/prep/instructions), and the MATH table's plain-integer
+    dimensions (DisplayOperatorMinHeight, DelimitedSubFormulaMinHeight,
+    MinConnectorOverlap, each glyph variant's AdvanceMeasurement, and the
+    connector lengths and full advances of glyph assemblies).
+
+    Mono carries neither: it has no glyph instructions, its only prep sets
+    dropout control (em-independent), and it has no MATH table, so its re-em is
+    visually lossless. The Math face (STIX Two Math) carries both, which is why
+    a MATH table stops the re-em. Its hinting control values hold 1000-unit
+    heights (cap height 657, x-height 473), and PDFium (Chrome's PDF viewer) runs
+    the glyph instructions of an embedded TrueType font, so on a 2048-unit em it
+    snaps STIX glyphs to about half height. MathML layout reads the MATH
+    dimensions to size large operators and to build stretched delimiters,
+    radicals, and accents, so unscaled ones would size those against figures
+    half their true value.
 
     glyf coordinates are int16; guard the largest against the 32767 ceiling
     before scaling. No face comes near it (JetBrains Mono peaks ~1735 -> 3553),
@@ -131,7 +145,7 @@ def reem(font):
     so a variable master would re-em wrong. Every face here is static.
     """
     old = font["head"].unitsPerEm
-    if (old & (old - 1)) == 0 or "COLR" in font:
+    if (old & (old - 1)) == 0 or "COLR" in font or "MATH" in font:
         return False
     glyf = font["glyf"]
     mx = 0
@@ -214,9 +228,10 @@ def build_variable(key, spec, descriptors):
 
 def place(src, dest):
     """Copy a prebuilt static face from src to dest, re-emming it in passing when
-    reem() applies (Math is 1000-em; Emoji/Tofu are colour and pass through
-    byte-for-byte). Returns the PostScript name (id 6). save() preserves the
-    flavor, so a woff2 source is rewritten as woff2."""
+    reem() applies. No copied face qualifies: Emoji and Tofu are colour faces,
+    and Math carries a MATH table, so all three pass through byte-for-byte.
+    Returns the PostScript name (id 6). save() preserves the flavor, so a
+    re-emmed woff2 source is rewritten as woff2."""
     font = TTFont(src)
     ps = font["name"].getDebugName(6)
     if reem(font):
